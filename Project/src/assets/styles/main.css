@@ -1,0 +1,613 @@
+/* main.css - all styles */
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  background: #f5f7fa;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.auth-form {
+  background: white;
+  padding: 30px 40px;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgb(0 0 0 / 0.1);
+  width: 360px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-form h2 {
+  margin-bottom: 20px;
+  text-align: center;
+  color: #333;
+}
+
+.auth-form label {
+  margin-top: 10px;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.auth-form input {
+  padding: 10px;
+  font-size: 1rem;
+  border: 1.5px solid #ddd;
+  border-radius: 4px;
+  outline-offset: 2px;
+  transition: border-color 0.2s;
+}
+
+.auth-form input:focus {
+  border-color: #007bff;
+}
+
+.auth-form button[type="submit"] {
+  margin-top: 25px;
+  padding: 12px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 4px;
+  background: #007bff;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-form button[type="submit"]:hover {
+  background: #0056b3;
+}
+
+.switch-link {
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+
+.switch-link button {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+  font-weight: 600;
+  padding: 0;
+  margin-left: 4px;
+}
+
+.switch-link button:hover {
+  color: #0056b3;
+}
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 40px; /* space for the icon */
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.password-wrapper button {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  font-size: 1.1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-wrapper button:hover {
+  color: #007bff;
+}
+
+
+/* Outer wrapper */
+.dashboard-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Header + Footer stay fixed top & bottom */
+.dashboard-container {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 270px;
+  background-color: #012e41;
+  color: white;
+  padding: 20px;
+  height: 100%;
+  /* border-radius: 0px 15px 0px 0px; */
+}
+
+.sidebar-title {
+  margin-bottom: 2rem;
+}
+
+.sidebar-list {
+  margin-top: 25px;
+  margin-left: 9px;
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar-item {
+  margin-bottom: 1rem;
+  cursor: pointer;
+  transition: color 0.3s;
+  font-size: 13px;
+}
+
+.sidebar-item:hover {
+  color: #1abc9c;
+}
+
+.sidebar-item.active {
+  color: rgb(7, 192, 7);
+  /* font-weight: bolder; */
+}
+.sidebar-item img {
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  object-fit: contain;
+  vertical-align: middle;
+  filter: invert(100%);
+  transition: filter 0.3s ease;
+}
+
+.sidebar-item:hover img {
+  filter: invert(73%) sepia(51%) saturate(360%) hue-rotate(122deg) brightness(95%) contrast(90%);
+}
+
+.sidebar-item.active img {
+  filter: invert(63%) sepia(94%) saturate(384%) hue-rotate(83deg) brightness(92%) contrast(94%);
+}
+
+/* Content area */
+.dashboard-main {
+  flex: 1;
+  padding: 20px;
+  background-color:#e8e2e2;
+  overflow-y: auto;
+}
+
+/* User Info Box */
+.user-info {
+  background-color: #1e1e2f;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  color: white;
+}
+
+/* Header */
+
+/* Footer */
+.footer {
+  width: 100%;
+  padding: 16px;
+  background-color: white;
+  color: black;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  height: 52px;
+}
+.footer-div{
+      width: 271px;
+    background-color: #012e41;
+    margin-left: -17px;
+    margin-top: -16px;
+    margin-bottom: -16px;
+    border-bottom-right-radius: 52px;
+}
+
+
+/* Edit Form Css  */
+/* EditProfile.css */
+.edit-profile-form {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #1e1e2f;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #ffffff;
+  font-family: "Segoe UI", sans-serif;
+}
+
+.edit-profile-form h2 {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 24px;
+  color: #ffffff;
+}
+
+.edit-profile-form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 18px;
+  border: none;
+  border-radius: 8px;
+  background-color: #2c2c3e;
+  color: #ffffff;
+  font-size: 16px;
+  transition: background 0.3s;
+}
+
+.edit-profile-form input:focus {
+  background-color: #3b3b53;
+  outline: none;
+}
+
+.edit-profile-form button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  background-color: #00bcd4;
+  color: #ffffff;
+  font-size: 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.edit-profile-form button:hover {
+  background-color: #0097a7;
+}
+
+.edit-profile-form button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.edit-profile-form p {
+  text-align: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: #ccc;
+}
+
+
+/* password update  */
+.change-password-container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 30px;
+  background-color: #1e1e2f;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.change-password-title {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  color: white;
+}
+
+.change-password-input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+.change-password-input:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.change-password-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #007bff;
+  color: white;
+  font-size: 1rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.change-password-button:disabled {
+  background-color: #a3c5f7;
+  cursor: not-allowed;
+}
+
+.change-password-button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+
+
+/* User Form CSS  */
+.user-container {
+  width: 100%;
+  min-height: 200px;
+  background: #e1dfdf;
+  display: flex;
+  flex-direction: column;
+  border-radius: 5px;
+}
+
+.user-top-buttons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.users-heading {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+  color: #333;
+}
+
+.user-top-buttons button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background-color: #1677ff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.user-top-buttons button:hover {
+  background-color: #0958d9;
+}
+
+.user-top-buttons svg {
+  font-size: 16px;
+}
+
+
+.user-search-form {
+  background: #1e1e2f;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin: 0 10px 10px 10px;
+  border-radius: 5px;
+  color: black;
+}
+
+.user-add-form {
+  background: #1e1e2f;
+  padding: 10px;
+  border: 1px solid #ccc;
+  margin: 0 10px 10px 10px;
+  border-radius: 5px;
+  color: white;
+}
+.user-search-form button{
+  background: #007bff;
+  padding: 12px;
+  margin: 5px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+}
+
+.user-add-form button{
+  background: #007bff;
+  padding: 12px;
+  margin: 5px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.user-search-form input{
+  padding: 10px;
+  border-radius: 5px;
+}
+
+.user-add-form input{
+  padding: 10px;
+  border-radius: 5px;
+  color: black;
+}
+
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.form-actions {
+  margin-top: 10px;
+}
+
+.divider {
+  height: 2px;
+  background: black;
+  width: 100%;
+}
+
+.user-table-container {
+  padding: 10px;
+}
+
+.user-table-container thead th{
+  background-color: #ffffff !important;
+  color: #1e1e2f !important;
+  font-weight: bold !important;
+  border: 2px solid #1e1e2f !important;
+}
+
+
+/* Action buttons css  */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn svg {
+  font-size: 16px;
+}
+
+.btn.edit {
+  background-color: #e0f7fa;
+  color: #00796b;
+}
+
+.btn.edit:hover {
+  background-color: #b2ebf2;
+}
+
+.btn.delete {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.btn.delete:hover {
+  background-color: #ffcdd2;
+}
+
+
+.btn.toggle {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.btn.toggle.activate {
+  color: red;
+}
+.btn.toggle.deactivate {
+  color: green;
+}
+
+
+
+
+/* category css  */
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.category-heading {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.category-controls {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.category-controls input[type="text"] {
+  padding: 6px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 200px;
+}
+
+.category-controls .ant-picker-range {
+  width: 250px;
+}
+
+
+
+/* sub category css  */
+
+.subcategory-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.subcategory-title {
+  margin: 0;
+}
+
+.subcategory-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* Service management css  */
+.service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.service-title {
+  margin: 0;
+}
+
+.service-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+

@@ -128,6 +128,80 @@ body, html {
   overflow: hidden;
 }
 
+/* Card Styles */
+.dashboard-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
+  padding: 20px;
+  background-color: #ffffff;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.dashboard-icon-wrapper {
+  background-color: #f0f2f5;
+  border-radius: 50%;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+
+.dashboard-icon {
+  font-size: 24px;
+  color: #1890ff;
+}
+
+.dashboard-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #595959;
+}
+
+.dashboard-number {
+  margin: 8px 0 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #262626;
+}
+
+/* Chart Container */
+.dashboard-chart-card {
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  margin-top: 30px;
+  background-color: #fff;
+  padding: 24px;
+}
+
+.dashboard-chart-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .dashboard-card {
+    margin-bottom: 16px;
+  }
+
+  .dashboard-chart-card {
+    padding: 16px;
+  }
+}
+
+
 /* Header + Footer stay fixed top & bottom */
 .dashboard-container {
   display: flex;
@@ -197,14 +271,7 @@ body, html {
   overflow-y: auto;
 }
 
-/* User Info Box */
-.user-info {
-  background-color: #1e1e2f;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  color: white;
-}
+
 
 /* Header */
 
@@ -608,6 +675,21 @@ body, html {
   gap: 10px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.service-outer{
+  display: flex;
+  flex-direction: column;
+  row-gap: 11px;
+}
+
+.serviceTwo{
+  margin: 5px 0px 5px 0px;
+}
+
+.serviceOne{
+  margin: 5px 0px 5px 0px;
+ text-align: end;
 }
 
 

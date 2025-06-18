@@ -7,6 +7,7 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const subCategoryRoutes = require('./routes/subCategoryRoutes')
 const serviceRoutes = require('./routes/serviceRoutes')
 const stats = require('./routes/stats')
+const attribute = require('./routes/attribute')
 
 const methodOverride = require("method-override");
 
@@ -33,5 +34,7 @@ app.use('/', categoryRoutes);
 app.use('/subcategory', subCategoryRoutes);
 app.use('/service', serviceRoutes);
 app.use('/stats',stats)
+app.use('/attribute',attribute)
+
 
 

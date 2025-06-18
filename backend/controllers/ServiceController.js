@@ -1,6 +1,7 @@
 const Service = require("../model/service");
 const Category = require("../model/category");
 const SubCategory = require("../model/subCategory");
+const mongoose = require("mongoose");
 
 // Create Service
 exports.createService = async (req, res) => {
@@ -46,7 +47,7 @@ exports.createService = async (req, res) => {
 // Get All Services
 exports.getAllServices = async (req, res) => {
   try {
-    const {
+    let {
       name,
       category,
       subCategory,
@@ -61,59 +62,54 @@ exports.getAllServices = async (req, res) => {
       query,
     } = req.query;
 
-    const matchConditions = [];
+    page = parseInt(page);
+    limit = parseInt(limit);
 
-    // Search query (on name or sort_order)
+    const match = {};
+
+    // Search query on name or sort_order
     if (query) {
-      matchConditions.push({
-        $or: [
-          { name: { $regex: query, $options: "i" } },
-          { sort_order: parseInt(query) || -1 },
-        ],
-      });
+      const parsedSortOrder = parseInt(query);
+      match.$or = [
+        { name: { $regex: query, $options: "i" } },
+        ...(isNaN(parsedSortOrder) ? [] : [{ sort_order: parsedSortOrder }]),
+      ];
     }
 
-    // Name filter
-    if (name) {
-      matchConditions.push({
-        name: { $regex: name, $options: "i" },
-      });
-    }
+  
 
-    // Category filter
     if (category) {
-      matchConditions.push({ category });
+      match.category = new mongoose.Types.ObjectId(category);
     }
 
-    // Subcategory filter
     if (subCategory) {
-      matchConditions.push({ subCategories: subCategory });
+      match.subCategories = new mongoose.Types.ObjectId(subCategory); ;
     }
 
-    // Price filter
-    if (minPrice && maxPrice) {
-      matchConditions.push({
-        min_price: { $gte: parseFloat(minPrice) },
-        max_price: { $lte: parseFloat(maxPrice) },
-      });
+    if (minPrice || maxPrice) {
+      match.min_price = {};
+      if (minPrice) match.min_price.$gte = parseFloat(minPrice);
+      if (maxPrice) match.min_price.$lte = parseFloat(maxPrice);
     }
 
-    // Date range filter
     if (dateFrom || dateTo) {
-      const dateRange = {};
-      if (dateFrom) dateRange.$gte = new Date(dateFrom);
-      if (dateTo) dateRange.$lte = new Date(dateTo);
-      matchConditions.push({ createdAt: dateRange });
+      match.createdAt = {};
+      if (dateFrom) match.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) match.createdAt.$lte = new Date(dateTo);
     }
 
-    // Final match stage
-    const matchStage = matchConditions.length ? { $and: matchConditions } : {};
+    const sortDir = sortOrder === "asc" || sortOrder === "ascend" ? 1 : -1;
+    const sortFieldMap = {
+      name: "name_lower",
+      "category.name": "category.name",
+      "subCategories.name": "subCategories.name",
+      createdAt: "createdAt",
+      sort_order: "sort_order",
+    };
+    const resolvedSortField = sortFieldMap[sortField] || "createdAt";
 
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sortDirection = sortOrder === "ascend" || sortOrder === "asc" ? 1 : -1;
-
-    const pipeline = [
-      { $match: matchStage },
+    const aggregate = Service.aggregate([
+      { $match: match },
       {
         $lookup: {
           from: "eventcategories",
@@ -130,51 +126,43 @@ exports.getAllServices = async (req, res) => {
           as: "subCategories",
         },
       },
-      { $unwind: "$category" },
       {
         $addFields: {
           name_lower: { $toLower: "$name" },
-          category_name: "$category.name",
-          subcategory_name: {
-            $arrayElemAt: ["$subCategories.name", 0],
-          },
+        },
+      },
+      {
+        $unwind: {
+          path: "$category",
+          preserveNullAndEmptyArrays: true,
         },
       },
       {
         $sort: {
-          [sortField === "name"
-            ? "name_lower"
-            : sortField === "category.name"
-            ? "category_name"
-            : sortField === "subCategories.name"
-            ? "subcategory_name"
-            : sortField]: sortDirection,
+          [resolvedSortField]: sortDir,
         },
       },
-      {
-        $facet: {
-          data: [{ $skip: skip }, { $limit: parseInt(limit) }],
-          totalCount: [{ $count: "count" }],
-        },
-      },
-    ];
+    ]);
 
-    const result = await Service.aggregate(pipeline);
+    const options = {
+      page,
+      limit,
+    };
 
-    const services = result[0]?.data || [];
-    const total = result[0]?.totalCount[0]?.count || 0;
+    const result = await Service.aggregatePaginate(aggregate, options);
 
     res.json({
-      services,
-      total,
-      currentPage: parseInt(page),
-      totalPages: Math.ceil(total / limit),
+      services: result.docs,
+      total: result.totalDocs,
+      currentPage: result.page,
+      totalPages: result.totalPages,
     });
   } catch (err) {
     console.error("Error fetching services:", err);
     res.status(500).json({ error: "Failed to fetch services" });
   }
 };
+
 
 
 

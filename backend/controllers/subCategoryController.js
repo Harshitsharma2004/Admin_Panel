@@ -1,5 +1,6 @@
 const SubCategory = require("../model/subCategory");
 const Category = require("../model/category");
+const { default: mongoose } = require("mongoose");
 
 exports.getAllSubCategories = async (req, res) => {
   try {
@@ -15,30 +16,32 @@ exports.getAllSubCategories = async (req, res) => {
       query,
     } = req.query;
 
-    const andConditions = [];
+    const andConditions = {};
 
     if (query) {
-      andConditions.push({ name: { $regex: query, $options: "i" } });
+      const parsedSortOrder = parseInt(query);
+
+      andConditions.$or = [
+        { name: { $regex: query, $options: 'i' } },
+        ...(!isNaN(parsedSortOrder)
+          ? [{ sort_order: parsedSortOrder }]
+          : [])
+      ];
     }
 
-    if (name) {
-      andConditions.push({ name: { $regex: name, $options: "i" } });
-    }
 
     if (category) {
-      andConditions.push({ category });
+      andConditions.category = new mongoose.Types.ObjectId(category);
     }
 
-    if (dateFrom && dateTo) {
-      andConditions.push({
-        createdAt: {
-          $gte: new Date(dateFrom),
-          $lte: new Date(dateTo),
-        },
-      });
+    if (dateFrom || dateTo) {
+      andConditions.createdAt = {};
+      if (dateFrom) andConditions.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) andConditions.createdAt.$lte = new Date(dateTo);
     }
 
-    const filter = andConditions.length ? { $and: andConditions } : {};
+    const filter = Object.keys(andConditions).length ? andConditions : {};
+
 
     const total = await SubCategory.countDocuments(filter);
 

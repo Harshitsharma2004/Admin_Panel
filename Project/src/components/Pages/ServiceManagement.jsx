@@ -102,7 +102,6 @@ const ServiceManagement = () => {
         sortOrder: sortOrder === "ascend" ? "asc" : "desc",
       };
 
-      console.log("Search Params:", params); // Debugging line for checking parameters
 
       const res = await axios.get("http://localhost:5000/service", { params });
       setServices(res.data.services);
@@ -270,7 +269,7 @@ const ServiceManagement = () => {
               setSelected(record);
               setFormError(null);
               setIsModalVisible(true);
-              navigate(`/dashboard/services/edit_service/${record._id}`);
+              navigate(`/dashboard/services`);
             }}
           />
           <Button
@@ -279,7 +278,7 @@ const ServiceManagement = () => {
             onClick={() => {
               setDeleteServiceId(record._id);
               setDeleteModalVisible(true);
-              navigate(`/dashboard/services/delete_service/${record._id}`);
+              navigate(`/dashboard/services`);
             }}
           />
         </Space>
@@ -297,82 +296,96 @@ const ServiceManagement = () => {
         title={<h2 className="service-title">Service Management</h2>}
         extra={
           <>
-            <Space className="service-controls">
-              <Input
-                placeholder="Search service"
-                prefix={<SearchOutlined />}
-                allowClear
-                onChange={handleSearchChange}
-                value={filters.query} // Controlled input for search
-                style={{ width: 200 }}
-              />
-
-              <Select
-                showSearch
-                allowClear
-                placeholder="Filter by Category"
-                style={{ width: 180 }}
-                value={filters.selectedCategory}
-                onChange={handleCategoryChange}
-              >
-                {categories.map((cat) => (
-                  <Option key={cat._id} value={cat._id}>
-                    {cat.name}
-                  </Option>
-                ))}
-              </Select>
-
-              {filters.selectedCategory && (
-                <Select
-                  showSearch
-                  allowClear
-                  placeholder="Filter by SubCategory"
-                  style={{ width: 180 }}
-                  value={filters.selectedSubCategory}
-                  onChange={handleSubCategoryChange}
+            <div className="service-outer">
+              <div className="serviceOne">
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setIsEdit(false);
+                    setFormData({
+                      name: "",
+                      category: "",
+                      subCategories: [],
+                      sort_order: "",
+                      min_price: "",
+                      max_price: "",
+                      profile: null,
+                    });
+                    setFormError(null);
+                    setIsModalVisible(true);
+                    navigate("/dashboard/services");
+                  }}
                 >
-                  {subCategories
-                    .filter(
-                      (sub) => sub.category?._id === filters.selectedCategory
-                    ) // Only show subcategories for the selected category
-                    .map((sub) => (
-                      <Option key={sub._id} value={sub._id}>
-                        {sub.name}
+                  Add Service
+                </Button>
+              </div>
+              <div className="serviceTwo">
+                <Space className="service-controls">
+                  <Input
+                    placeholder="Search service"
+                    prefix={<SearchOutlined />}
+                    allowClear
+                    onChange={handleSearchChange}
+                    value={filters.query} // Controlled input for search
+                    style={{ width: 200 }}
+                  />
+
+                  <Select
+                    showSearch
+                    allowClear
+                    placeholder="Filter by Category"
+                    style={{ width: 180 }}
+                    value={filters.selectedCategory}
+                    onChange={handleCategoryChange}
+                  >
+                    {categories.map((cat) => (
+                      <Option key={cat._id} value={cat._id}>
+                        {cat.name}
                       </Option>
                     ))}
-                </Select>
-              )}
+                  </Select>
 
-              <RangePicker
-                onChange={handleDateRangeChange}
-                value={filters.dateRange}
-                disabledDate={(current) =>
-                  current && current > dayjs().endOf("day")
-                }
-              />
+                  {filters.selectedCategory && (
+                    <Select
+                      showSearch
+                      allowClear
+                      placeholder="Filter by SubCategory"
+                      style={{ width: 180 }}
+                      value={filters.selectedSubCategory}
+                      onChange={handleSubCategoryChange}
+                    >
+                      {subCategories
+                        .filter(
+                          (sub) =>
+                            sub.category?._id === filters.selectedCategory
+                        ) // Only show subcategories for the selected category
+                        .map((sub) => (
+                          <Option key={sub._id} value={sub._id}>
+                            {sub.name}
+                          </Option>
+                        ))}
+                    </Select>
+                  )}
 
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setIsEdit(false);
-                  setFormData({
-                    name: "",
-                    category: "",
-                    subCategories: [],
-                    sort_order: "",
-                    min_price: "",
-                    max_price: "",
-                    profile: null,
-                  });
-                  setFormError(null);
-                  setIsModalVisible(true);
-                  navigate("/dashboard/services/add_service");
-                }}
-              >
-                Add Service
-              </Button>
-            </Space>
+                  <RangePicker
+                    onChange={handleDateRangeChange}
+                    value={filters.dateRange}
+                    disabledDate={(current) =>
+                      current && current > dayjs().endOf("day")
+                    }
+                  />
+                  <Button
+                    danger
+                    onClick={() => {
+                      setFilters("");
+                    }}
+                  >
+                    Reset
+                  </Button>
+                </Space>
+              </div>
+            </div>
           </>
         }
       >

@@ -22,6 +22,7 @@ import {jwtDecode} from "jwt-decode";
 import Category from "./components/Pages/Category";
 import SubCategory from "./components/Pages/SubCategory";
 import ServiceManagement from "./components/Pages/ServiceManagement";
+import AttributeManagement from "./components/Pages/AttributeManagement";
 
 
 function ProtectedRoute({ children }) {
@@ -139,21 +140,15 @@ function App() {
 
             {/* for category  */}
             <Route path="category" element={<Category />} />
-            <Route path="category/add_category" element={<Category />} />
-            <Route path="category/edit_category/:id" element={<Category />} />
-            <Route path="category/delete_category/:id" element={<Category />} />
 
             <Route path="sub_category" element={<SubCategory />} />
-            <Route path="sub_category/add_sub_category" element={<SubCategory />} />
-            <Route path="sub_category/edit_sub_category/:id" element={<SubCategory />} />
-            <Route path="sub_category/delete_sub_category/:id" element={<SubCategory />} />
 
 
 
             <Route path="services" element={<ServiceManagement/>} />
-            <Route path="services/add_service" element={<ServiceManagement />} />
-            <Route path="services/edit_service/:id" element={<ServiceManagement />} />
-            <Route path="services/delete_service/:id" element={<ServiceManagement />} />
+
+
+            <Route path="attributes" element={<AttributeManagement/>} />
 
 
           </Route>

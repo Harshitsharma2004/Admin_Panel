@@ -1,6 +1,5 @@
-// components/DashboardStats.jsx
 import React, { useEffect, useState } from "react";
-import { Card, Row, Col, Spin } from "antd";
+import { Card, Row, Col, Spin, message } from "antd";
 import axios from "axios";
 import {
   UserOutlined,
@@ -9,36 +8,30 @@ import {
   SettingOutlined,
 } from "@ant-design/icons";
 
-const cardStyle = {
-  borderRadius: "12px",
-  boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-  textAlign: "center",
-};
+import { PieChart } from "@mui/x-charts/PieChart";
 
-const iconStyle = {
-  fontSize: "28px",
-  marginBottom: "10px",
-  color: "#1890ff",
-};
+import { AiOutlineContainer } from "react-icons/ai";
 
 export default function DashboardStats() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchStats = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/stats");
+      setStats(res.data);
+    } catch (err) {
+      message.error("Failed to load dashboard stats");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/stats")
-      .then((res) => {
-        setStats(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching stats", err);
-        setLoading(false);
-      });
+    fetchStats();
   }, []);
 
-  if (loading) {
+  if (loading || !stats) {
     return (
       <div style={{ textAlign: "center", marginTop: "40px" }}>
         <Spin size="large" />
@@ -46,36 +39,69 @@ export default function DashboardStats() {
     );
   }
 
+  const statsList = [
+    {
+      icon: <UserOutlined className="dashboard-icon" />,
+      title: "Total Users",
+      value: stats.users,
+    },
+    {
+      icon: <AppstoreOutlined className="dashboard-icon" />,
+      title: "Categories",
+      value: stats.categories,
+    },
+    {
+      icon: <TagsOutlined className="dashboard-icon" />,
+      title: "Sub Categories",
+      value: stats.subCategories,
+    },
+    {
+      icon: <SettingOutlined className="dashboard-icon" />,
+      title: "Services",
+      value: stats.services,
+    },
+    {
+      icon: <AiOutlineContainer className="dashboard-icon" />,
+      title: "Attributes",
+      value: stats.attributes,
+    },
+  ];
+
   return (
-    <Row gutter={[24, 24]}>
-      <Col xs={24} sm={12} md={6}>
-        <Card style={cardStyle}>
-          <UserOutlined style={iconStyle} />
-          <h3>Total Users</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold" }}>{stats.users}</p>
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={6}>
-        <Card style={cardStyle}>
-          <AppstoreOutlined style={iconStyle} />
-          <h3>Categories</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold" }}>{stats.categories}</p>
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={6}>
-        <Card style={cardStyle}>
-          <TagsOutlined style={iconStyle} />
-          <h3>Sub Categories</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold" }}>{stats.subCategories}</p>
-        </Card>
-      </Col>
-      <Col xs={24} sm={12} md={6}>
-        <Card style={cardStyle}>
-          <SettingOutlined style={iconStyle} />
-          <h3>Services</h3>
-          <p style={{ fontSize: "24px", fontWeight: "bold" }}>{stats.services}</p>
-        </Card>
-      </Col>
-    </Row>
+    <>
+      <Row gutter={[24, 24]}>
+        {statsList.map((item, index) => (
+          <Col xs={24} sm={12} md={6} key={index}>
+            <Card className="dashboard-card">
+              <div className="dashboard-icon-wrapper">{item.icon}</div>
+              <h3 className="dashboard-title">{item.title}</h3>
+              <p className="dashboard-number">{item.value}</p>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      <Card className="dashboard-chart-card" style={{ marginTop: 24 }}>
+        <h3 className="dashboard-chart-title">Data Overview</h3>
+
+        <PieChart
+          series={[
+            {
+              data: [
+                { id: 0, value: stats.users, label: "Users" },
+                { id: 1, value: stats.categories, label: "Categories" },
+                { id: 3, value: stats.subCategories, label: "Sub Categories" },
+                { id: 4, value: stats.services, label: "Services" },
+                { id: 5, value: stats.attributes, label: "Attributes" },
+              ],
+              highlightScope: { fade: "global", highlight: "item" },
+              faded: { innerRadius: 30, additionalRadius: -30, color: "gray" },
+            },
+          ]}
+          width={200}
+          height={200}
+        />
+      </Card>
+    </>
   );
 }

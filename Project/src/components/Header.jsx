@@ -104,7 +104,7 @@ export default function Header() {
               style={menuCardStyle}
               onClick={() => navigate("/dashboard/edit_profile")}
             >
-              📝 Edit Profile
+              📝 Profile
             </div>
             <div
               style={menuCardStyle}

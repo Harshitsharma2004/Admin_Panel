@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../AuthContainer/AuthContainer";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 export default function EditProfile() {
+  const navigate = useNavigate()
   const { fetchUserData, switchView, user } = useAuth();
 
   const [formData, setFormData] = useState({ name: "", email: "" });
@@ -11,6 +13,8 @@ export default function EditProfile() {
   const [otp, setOtp] = useState("");
   const [waitingForOtp, setWaitingForOtp] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const [isEditMode, setIsEditMode] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -40,7 +44,7 @@ export default function EditProfile() {
         });
 
         if (res.ok) {
-          toast.success("Profile Updated Successfully!")
+          toast.success("Profile Updated Successfully!");
           await fetchUserData();
           switchView("dashboard");
         } else {
@@ -65,7 +69,7 @@ export default function EditProfile() {
 
         const data = await res.json();
         if (res.ok && data.emailChangePending) {
-          toast.info("OTP sent to new email.")
+          toast.info("OTP sent to new email.");
           setOtpSent(true);
         } else {
           toast.error(data.error || "Failed to send OTP");
@@ -92,7 +96,7 @@ export default function EditProfile() {
 
       const data = await res.json();
       if (res.ok) {
-        toast.success("Email updated successfully!")
+        toast.success("Email updated successfully!");
         await fetchUserData();
         switchView("dashboard");
       } else {
@@ -107,33 +111,59 @@ export default function EditProfile() {
 
   return (
     <form onSubmit={handleSubmit} className="edit-profile-form">
-      <h2>Edit Profile</h2>
+      <h2>My Profile</h2>
 
-      <input
-        name="name"
-        value={formData.name}
-        onChange={handleChange}
-        placeholder="Full Name"
-      />
-      <input
-        name="email"
-        value={formData.email}
-        onChange={handleChange}
-        placeholder="Email"
-      />
+      <div className="form-group">
+        <label>Full Name</label>
+        <input
+          name="name"
+          value={formData.name}
+          onChange={handleChange}
+          placeholder="Enter your name"
+        />
+      </div>
 
-      {!otpSent && <button type="submit">Save</button>}
+      <div className="form-group">
+        <label>Email</label>
+        <input
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="Enter your email"
+        />
+      </div>
+
+      {!otpSent && (
+        <div className="button-group">
+          <button type="submit">Update</button>
+          <button
+            type="button"
+            className="cancel-button"
+            onClick={() => {
+              navigate('/dashboard/home')
+            }}
+          >
+            Back
+          </button>
+        </div>
+      )}
 
       {waitingForOtp && otpSent && (
-        <div>
+        <div className="otp-section">
           <p>An OTP has been sent to your new email.</p>
           <input
             type="text"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
             placeholder="Enter OTP"
+            className="otp-input"
           />
-          <button type="button" onClick={handleVerifyOtp} disabled={loading}>
+          <button
+            type="button"
+            onClick={handleVerifyOtp}
+            disabled={loading}
+            className="verify-button"
+          >
             {loading ? "Verifying..." : "Verify & Update Email"}
           </button>
         </div>

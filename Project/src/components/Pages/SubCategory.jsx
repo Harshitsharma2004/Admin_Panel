@@ -9,6 +9,7 @@ import {
   DatePicker,
   Select,
   Card,
+  Form,
 } from "antd";
 import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -17,12 +18,15 @@ import { Input } from "antd";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import Breadcrumb from "../BreadCrumb";
+import ProfileUploader from "../Profile/ProfileUploader";
 const { Search } = Input;
 
 const { RangePicker } = DatePicker;
 
 const SubCategory = () => {
   const navigate = useNavigate();
+  const [form] = Form.useForm(); // for Add Modal
+  const [editForm] = Form.useForm(); // for Edit Modal
 
   const [subCategories, setSubCategories] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -31,7 +35,7 @@ const SubCategory = () => {
     name: "",
     sort_order: "",
     profile: null,
-    categoryId: "",
+    categoryId: null,
   });
 
   const [editingSubCategory, setEditingSubCategory] = useState(null);
@@ -129,13 +133,7 @@ const SubCategory = () => {
     sortOrder,
   ]);
 
-  const isFormValid = () =>
-    newSubCategory.name.trim() &&
-    newSubCategory.sort_order &&
-    newSubCategory.categoryId;
-
   const handleAddSubCategory = async () => {
-    if (!isFormValid()) return;
     setAddLoading(true);
     const formData = new FormData();
     formData.append("name", newSubCategory.name);
@@ -152,7 +150,7 @@ const SubCategory = () => {
         name: "",
         sort_order: "",
         profile: null,
-        categoryId: "",
+        categoryId: null,
       });
       setIsAddModalVisible(false);
       toast.success("Subcategory created successfully", 4);
@@ -170,35 +168,33 @@ const SubCategory = () => {
     }
   };
 
-  const handleEditSubCategory = async () => {
-    if (!isFormValid()) return;
+  const handleEditSubCategory = async (values) => {
+    if (!editingSubCategory || !editingSubCategory._id) {
+      toast.error("Editing subcategory is not set.");
+      return;
+    }
+
     setEditLoading(true);
     const formData = new FormData();
-    formData.append("name", newSubCategory.name);
-    formData.append("sort_order", newSubCategory.sort_order);
-    formData.append("category", newSubCategory.categoryId);
-    if (newSubCategory.profile) {
-      formData.append("profile", newSubCategory.profile);
+    formData.append("name", values.name);
+    formData.append("sort_order", values.sort_order);
+    formData.append("category", values.categoryId);
+    if (values.profile) {
+      formData.append("profile", values.profile);
     }
 
     try {
-      const res = await axios.put(
+      await axios.put(
         `http://localhost:5000/subcategory/update/${editingSubCategory._id}`,
         formData
       );
       fetchSubCategories();
       setIsEditModalVisible(false);
       setEditingSubCategory(null);
-      toast.success("Subcategory updated", 4);
+      toast.success("Subcategory updated", { autoClose: 4000 });
     } catch (error) {
-      if (error.response?.status === 409) {
-        toast.error(
-          "Sort order already exists. Please choose a different number."
-        );
-      } else {
-        toast.error("Failed to update");
-        console.error("Updae error: ", error);
-      }
+      console.error("Update error:", error);
+      toast.error("Failed to update subcategory");
     } finally {
       setEditLoading(false);
     }
@@ -265,27 +261,22 @@ const SubCategory = () => {
             icon={<EditOutlined />}
             onClick={() => {
               setEditingSubCategory(record);
-              setNewSubCategory({
+              editForm.setFieldsValue({
                 name: record.name,
                 sort_order: record.sort_order,
-                profile: null,
                 categoryId: record.category?._id || "",
               });
               setIsEditModalVisible(true);
             }}
-          >
-            Edit
-          </Button>
+          />
           <Button
-            danger
             icon={<DeleteOutlined />}
+            danger
             onClick={() => {
               setSelectedSubCategoryId(record._id);
               setIsDeleteModalVisible(true);
             }}
-          >
-            Delete
-          </Button>
+          />
         </Space>
       ),
     },
@@ -347,7 +338,16 @@ const SubCategory = () => {
               <Button
                 type="primary"
                 icon={<PlusOutlined />}
-                onClick={() => setIsAddModalVisible(true)}
+                onClick={() => {
+                  setNewSubCategory({
+                    name: "",
+                    sort_order: "",
+                    profile: null,
+                    categoryId: null,
+                  });
+                  form.resetFields();
+                  setIsAddModalVisible(true);
+                }}
               >
                 Add SubCategory
               </Button>
@@ -360,6 +360,7 @@ const SubCategory = () => {
           columns={columns}
           rowKey="_id"
           loading={loading}
+          scroll={{ x: "max-content" }}
           bordered
           onChange={(pagination, filters, sorter) => {
             setPage(pagination.current);
@@ -384,114 +385,114 @@ const SubCategory = () => {
       <Modal
         title="Add SubCategory"
         open={isAddModalVisible}
-        onOk={handleAddSubCategory}
+        onOk={() => form.submit()}
         onCancel={() => {
           setIsAddModalVisible(false);
+          setNewSubCategory({
+            name: "",
+            sort_order: "",
+            profile: null,
+            categoryId: null,
+          });
           navigate("/dashboard/sub_category");
         }}
-        okButtonProps={{ disabled: !isFormValid(), loading: addLoading }}
+        okButtonProps={{ loading: addLoading }}
+        destroyOnClose
       >
-        <label>Name:</label>
-        <input
-          value={newSubCategory.name}
-          onChange={(e) =>
-            setNewSubCategory({ ...newSubCategory, name: e.target.value })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
-        />
-        <label>Sort Order:</label>
-        <input
-          type="number"
-          value={newSubCategory.sort_order}
-          onChange={(e) =>
-            setNewSubCategory({
-              ...newSubCategory,
-              sort_order: parseInt(e.target.value),
-            })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
-        />
-        <label>Category:</label>
-        <Select
-          value={newSubCategory.categoryId}
-          onChange={(val) =>
-            setNewSubCategory({ ...newSubCategory, categoryId: val })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={newSubCategory}
+          onFinish={handleAddSubCategory}
         >
-          {categories.map((cat) => (
-            <Select.Option key={cat._id} value={cat._id}>
-              {cat.name}
-            </Select.Option>
-          ))}
-        </Select>
-        <label>Profile Image:</label>
-        <input
-          type="file"
-          onChange={(e) =>
-            setNewSubCategory({
-              ...newSubCategory,
-              profile: e.target.files[0],
-            })
-          }
-        />
+          <Form.Item
+            label="SubCategory Name"
+            name="name"
+            rules={[
+              { required: true, message: "Please enter subcategory name" },
+            ]}
+          >
+            <Input placeholder="Enter SubCategory Name" />
+          </Form.Item>
+
+          <Form.Item
+            label="Sort Order"
+            name="sort_order"
+            rules={[{ required: true, message: "Please enter sort order" }]}
+          >
+            <Input type="number" min={0} placeholder="Enter Sort Order" />
+          </Form.Item>
+
+          <Form.Item
+            label="Select Category"
+            name="categoryId"
+            rules={[{ required: true, message: "Please select a category" }]}
+          >
+            <Select placeholder="Select Category">
+              {categories.map((cat) => (
+                <Select.Option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <ProfileUploader />
+        </Form>
       </Modal>
 
       {/* Edit Modal */}
       <Modal
         title="Edit SubCategory"
         open={isEditModalVisible}
-        onOk={handleEditSubCategory}
+        onOk={() => editForm.submit()}
         onCancel={() => {
           setIsEditModalVisible(false);
           navigate("/dashboard/sub_category");
         }}
-        okButtonProps={{ disabled: !isFormValid(), loading: editLoading }}
+        okButtonProps={{ loading: editLoading }}
+        destroyOnClose
       >
-        <label>Name:</label>
-        <input
-          value={newSubCategory.name}
-          onChange={(e) =>
-            setNewSubCategory({ ...newSubCategory, name: e.target.value })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
-        />
-        <label>Sort Order:</label>
-        <input
-          type="number"
-          value={newSubCategory.sort_order}
-          onChange={(e) =>
-            setNewSubCategory({
-              ...newSubCategory,
-              sort_order: parseInt(e.target.value),
-            })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
-        />
-        <label>Category:</label>
-        <Select
-          value={newSubCategory.categoryId}
-          onChange={(val) =>
-            setNewSubCategory({ ...newSubCategory, categoryId: val })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
+        <Form
+          form={editForm}
+          layout="vertical"
+          initialValues={newSubCategory}
+          onFinish={handleEditSubCategory}
         >
-          {categories.map((cat) => (
-            <Select.Option key={cat._id} value={cat._id}>
-              {cat.name}
-            </Select.Option>
-          ))}
-        </Select>
-        <label>Profile Image:</label>
-        <input
-          type="file"
-          onChange={(e) =>
-            setNewSubCategory({
-              ...newSubCategory,
-              profile: e.target.files[0],
-            })
-          }
-        />
+          <Form.Item
+            label="SubCategory Name"
+            name="name"
+            rules={[
+              { required: true, message: "Please enter subcategory name" },
+            ]}
+          >
+            <Input placeholder="Enter SubCategory Name" />
+          </Form.Item>
+
+          <Form.Item
+            label="Sort Order"
+            name="sort_order"
+            rules={[{ required: true, message: "Please enter sort order" }]}
+          >
+            <Input type="number" min={0} placeholder="Enter Sort Order" />
+          </Form.Item>
+
+          <Form.Item
+            label="Select Category"
+            name="categoryId"
+            rules={[{ required: true, message: "Please select a category" }]}
+          >
+            <Select placeholder="Select Category">
+              {categories.map((cat) => (
+                <Select.Option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <ProfileUploader />
+        </Form>
       </Modal>
 
       {/* Delete Modal */}

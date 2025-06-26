@@ -1,4 +1,5 @@
 const User = require('../model/user');
+const SubAdmin = require('../model/sub_admin');
 const sendOtpEmail = require('../utils/sendOtp');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -24,36 +25,6 @@ const validatePassword = (password) => {
 // Generate 6-digit OTP
 const generateOtp = () => Math.floor(100000 + Math.random() * 900000).toString();
 
-// Send OTP
-// exports.signup = async (req, res) => {
-//   const { email } = req.body;
-
-//   try {
-//     const existingUser = await User.findOne({ email });
-
-//     if (existingUser && existingUser.isVerified) {
-//       return res.status(400).json({ error: 'Email already registered. Please login or use forgot password.',status:false });
-//     }
-
-//     const otp = generateOtp();
-//     const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
-
-//     let user = existingUser;
-//     if (!user) {
-//       user = new User({ email,type : "User", otp, otpExpires });
-//     } else {
-//       Object.assign(user, { otp, otpExpires });
-//     }
-
-//     await user.save();
-//     await sendOtpEmail(email, otp);
-
-//     res.status(200).json({ message: 'OTP sent to email.' ,status:true});
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: 'Error sending OTP.',status:false });
-//   }
-// };
 
 // Verify OTP
 exports.verifyOtp = async (req, res) => {
@@ -160,16 +131,31 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ email });
+    let user = await User.findOne({ email });
 
-    if (!user || !user.isVerified) {
-      return res.status(400).json({ error: 'Invalid credentials or unverified user.', status: false });
+    if (!user) {
+      user = await SubAdmin.findOne({ email });
+      fromCollection = "subadmins";
     }
 
-    // ✅ Only allow login if user is an admin
-    if (user.type.toLowerCase() !== 'admin') {
+    if (!user) {
+      return res.status(400).json({ error: 'Invalid credentials.', status: false });
+    }
+
+    const userType =
+      typeof user.type === "string"
+        ? user.type.toLowerCase()
+        : typeof user.role === "string"
+          ? user.role.toLowerCase()
+          : typeof user.role?.name === "string"
+            ? user.role.name.toLowerCase()
+            : "";
+
+
+    if (userType !== 'admin' && userType !== 'subadmin') {
       return res.status(403).json({ error: 'Access denied. Admins only.', status: false });
     }
+
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -201,31 +187,36 @@ exports.login = async (req, res) => {
 };
 
 
-//Get User Data
+
+// GET /user
 exports.getUserData = async (req, res) => {
   try {
-    const user = await User.findById(req.userId).select("-password");
-    if (!user) return res.status(404).json({ error: "User not found", status: false });
-    //  const data = {
-    //       email: user.email,
-    //       name: user.name || "Admin",
-    //       isVerified: user.isVerified,
-    //       role: user.role || "User",
-    //       id: user._id,
-    //     }
-    //     res.status(200).json({data, message : "user fetch successfully", status : true});
-    res.status(200).json({
-      email: user.email,
-      name: user.name || "Admin",
-      isVerified: user.isVerified,
-      role: user.role || "User",
+    const user = await User.findById(req.userId)
+      .populate("role") // populate role if SubAdmin
+      .select("-password");
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found", status: false });
+    }
+
+    const isSubAdmin = user.type === "SubAdmin";
+
+    return res.status(200).json({
       id: user._id,
+      email: user.email,
+      name: user.name || `${user.firstName} ${user.lastName}` || "Admin",
+      role: isSubAdmin ? user.role?.roleName || "SubAdmin" : user.type,
+      permissions: isSubAdmin ? user.role?.permissions || [] : [], // ✅ SubAdmin permissions only
+      isVerified: user.isVerified,
     });
   } catch (err) {
-    console.error("Failed to get user data:", err);
-    res.status(500).json({ error: "Server error", status: false });
+    console.error("Error in getUserData:", err);
+    return res.status(500).json({ error: "Server error", status: false });
   }
 };
+
+
+
 
 //update user 
 exports.updateUserProfile = async (req, res) => {
@@ -399,7 +390,7 @@ exports.getAllUsers = async (req, res) => {
     // --- Build Filter ---
     const andConditions = [
       { isDeleted: false },
-      { type: { $ne: "Admin" } }, // 🚫 Exclude Admins
+      { type: "User" }, // 🚫 Only Users
     ];
 
     // Text search
@@ -521,7 +512,7 @@ exports.getAllUsers = async (req, res) => {
 
 //edit user
 exports.editUserByAdmin = async (req, res) => {
-  const { firstName, lastName, email, role } = req.body;
+  const { firstName, lastName, email } = req.body;
   const userId = req.params.id;
 
   try {
@@ -546,7 +537,6 @@ exports.editUserByAdmin = async (req, res) => {
 
     if (firstName) user.firstName = firstName;
     if (lastName) user.lastName = lastName;
-    if (role) user.role = role;
 
     if (req.file) {
       user.profile = req.file.path.replace(/\\/g, "/");
@@ -604,4 +594,5 @@ exports.toggleUserStatus = async (req, res) => {
     res.status(500).json({ message: "Error updating user status" });
   }
 };
+
 

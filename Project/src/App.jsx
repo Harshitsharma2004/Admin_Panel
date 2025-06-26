@@ -23,6 +23,10 @@ import Category from "./components/Pages/Category";
 import SubCategory from "./components/Pages/SubCategory";
 import ServiceManagement from "./components/Pages/ServiceManagement";
 import AttributeManagement from "./components/Pages/AttributeManagement";
+import ServiceProvider from "./components/Pages/ServiceProviderManagement";
+import RoleManagement from './components/Pages/RoleManagement';
+import SubAdminManagement from './components/Pages/SubAdminManagement'; 
+
 
 
 function ProtectedRoute({ children }) {
@@ -133,10 +137,14 @@ function App() {
             <Route path="edit_profile" element={<EditProfile />} />
             <Route path="change_password" element={<ChangePassword />} />
             <Route path="users" element={<User />} />
-            <Route path="users/search" element={<User />} />
-            <Route path="users/add_new_users" element={<User />} />
-            <Route path="users/edit/:id" element={<User />} />
-            <Route path="users/delete/:id" element={<User />} />
+            <Route path="serviceProvider" element={<ServiceProvider />} />
+
+
+            <Route path="role" element={<RoleManagement />} />
+            <Route path="sub_admin" element={<SubAdminManagement />} />
+
+
+
 
             {/* for category  */}
             <Route path="category" element={<Category />} />
@@ -156,7 +164,7 @@ function App() {
         </Routes>
 
         {/* ✅ This is required for toasts to show up */}
-        <ToastContainer position="top-center" autoClose={2000} />
+        <ToastContainer position="top-right" autoClose={1000} />
       </AuthProvider>
     </Router>
   );

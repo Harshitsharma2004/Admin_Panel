@@ -14,6 +14,7 @@ import {
   Checkbox,
   InputNumber,
 } from "antd";
+
 import { DatePicker } from "antd";
 import {
   PlusOutlined,
@@ -39,6 +40,7 @@ const AttributeManagement = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -62,6 +64,7 @@ const AttributeManagement = () => {
 
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [showType, setShowType] = useState(false);
 
   const fetchCategories = async () => {
     try {
@@ -147,6 +150,8 @@ const AttributeManagement = () => {
   const openAddModal = () => {
     form.resetFields();
     setEditingAttribute(null);
+    setOptionFields([""]);
+    setShowType(false);
     setModalVisible(true);
   };
 
@@ -192,38 +197,41 @@ const AttributeManagement = () => {
 
   const handleFormSubmit = async (id) => {
     try {
-      const values = await form.validateFields();
+      const values = form.getFieldsValue();
 
-      const formData = new FormData();
-      formData.append("name", values.name);
-      formData.append("service", values.service);
-      formData.append("sort_order", values.sort_order);
-      formData.append("category", values.category);
-      formData.append("type", values.type);
-      formData.append("is_required", values.is_required);
-      formData.append("is_active", values.is_active);
-
-      // Append options if it's an array
-      if (Array.isArray(values.options)) {
-        values.options.forEach((opt) => {
-          formData.append("options[]", opt);
-        });
+      // Ensure options is an empty array if type requires it but options is undefined
+      if (
+        (values.type === "Radio" || values.type === "Checkbox") &&
+        (!Array.isArray(values.options) || values.options.length === 0)
+      ) {
+        toast.error("Please enter at least one option.");
+        return;
       }
 
-      // Append profile file if it's selected
-      if (values.profile && values.profile.file) {
-        formData.append("profile", values.profile.file.originFileObj);
-      }
+      // Construct clean payload (removes undefined fields)
+      const cleanValues = {
+        name: values.name?.trim(),
+        category: values.category,
+        service: values.service,
+        sort_order: values.sort_order,
+        type: values.type,
+        options:
+          values.type === "Radio" || values.type === "Checkbox"
+            ? values.options
+            : undefined,
+        is_active: values.is_active,
+        is_required: values.is_required,
+      };
+
 
       if (editingAttribute) {
-        // Include ID in the URL for updating the attribute
         await axios.put(
           `http://localhost:5000/attribute/update/${id}`,
-          formData
+          cleanValues
         );
         toast.success("Attribute updated successfully!");
       } else {
-        await axios.post("http://localhost:5000/attribute/create", formData);
+        await axios.post("http://localhost:5000/attribute/create", cleanValues);
         toast.success("Attribute created successfully!");
       }
 
@@ -263,27 +271,27 @@ const AttributeManagement = () => {
       dataIndex: "sort_order",
       sorter: true,
     },
-    {
-      title: "Attribute Values",
-      dataIndex: "attribute_name",
-      render: (opts) => (
-        <span>
-          {(opts || []).map((val, idx) => (
-            <span key={idx} style={{ marginRight: 8, display: "inline-block" }}>
-              <span
-                style={{
-                  backgroundColor: "#f5f5f5",
-                  padding: "2px 8px",
-                  borderRadius: "8px",
-                }}
-              >
-                {val}
-              </span>
-            </span>
-          ))}
-        </span>
-      ),
-    },
+    // {
+    //   title: "Attribute Values",
+    //   dataIndex: "options",
+    //   render: (opts) => (
+    //     <span>
+    //       {(opts || []).map((val, idx) => (
+    //         <span key={idx} style={{ marginRight: 8, display: "inline-block" }}>
+    //           <span
+    //             style={{
+    //               backgroundColor: "#f5f5f5",
+    //               padding: "2px 8px",
+    //               borderRadius: "8px",
+    //             }}
+    //           >
+    //             {val}
+    //           </span>
+    //         </span>
+    //       ))}
+    //     </span>
+    //   ),
+    // },
 
     {
       title: "Created On",
@@ -296,25 +304,31 @@ const AttributeManagement = () => {
         <Space>
           <Button
             icon={<EditOutlined />}
-            type="primary"
             onClick={() => openEditModal(record)}
-          >
-            Edit
-          </Button>
+          />
           <Button
-            danger
             icon={<DeleteOutlined />}
+            danger
             onClick={() => {
               setIsDeleteModalVisible(true);
               setSelectedAttributeId(record._id);
             }}
-          >
-            Delete
-          </Button>
+          />
         </Space>
       ),
     },
   ];
+
+  const attOptions = ["Radio", "Button", "Checkbox", "Number", "Textbox"];
+
+  const handleTypeChange = (value) => {
+    console.log("value---", value);
+    if (value === "Radio" || value === "Checkbox") {
+      setShowType(true);
+    } else {
+      setShowType(false);
+    }
+  };
 
   return (
     <div>
@@ -382,6 +396,7 @@ const AttributeManagement = () => {
           dataSource={attributes}
           rowKey="_id"
           loading={loading}
+          scroll={{ x: "max-content" }}
           pagination={{
             current: page,
             pageSize,
@@ -408,16 +423,24 @@ const AttributeManagement = () => {
       <Modal
         title={editingAttribute ? "Edit Attribute" : "Add Attribute"}
         open={modalVisible}
-        onOk={() => {handleFormSubmit(editingAttribute?._id)}}
-        onCancel={() => setModalVisible(false)}
         okText={editingAttribute ? "Update" : "Create"}
-        destroyOnHidden
+        cancelText="Cancel"
+        onCancel={() => {
+          setModalVisible(false);
+          setOptionFields([""]);
+          setShowType(false);
+        }}
+        onOk={() => form.submit()}
+        okButtonProps={{ loading: submitting }}
+        destroyOnClose
       >
         <Form
-          key={optionFields.length}
-          layout="vertical"
+          id="attribute-form"
           form={form}
-          onFinish={handleFormSubmit}
+          layout="vertical"
+          onFinish={(values) => {
+            handleFormSubmit(editingAttribute?._id, values);
+          }}
         >
           <Form.Item
             name="category"
@@ -436,7 +459,7 @@ const AttributeManagement = () => {
           <Form.Item
             name="service"
             label="Service Name"
-            rules={[{ required: true, message: "Please select service" }]}
+            rules={[{ required: true, message: "Please enter service name" }]}
           >
             <Select placeholder="Select service">
               {services.map((srv) => (
@@ -454,17 +477,15 @@ const AttributeManagement = () => {
           >
             <Input placeholder="Enter Attribute Name" />
           </Form.Item>
+
           <Form.Item
             name="sort_order"
             label="Attribute Sort Order"
-            rules={[
-              { required: true, message: "Please enter sort order" },
-              { type: "number", min: 1, message: "Must be at least 1" },
-            ]}
+            rules={[{ required: true, message: "Please enter sort number" }]}
           >
             <InputNumber
               min={1}
-              placeholder="Enter Attribute Sort Order"
+              placeholder="Enter Sort Order"
               style={{ width: "100%" }}
             />
           </Form.Item>
@@ -474,51 +495,99 @@ const AttributeManagement = () => {
             label="Type"
             rules={[{ required: true, message: "Please select type" }]}
           >
-            <Select placeholder="Select type" showSearch>
-              {["Radio", "Button", "Checkbox", "Number", "Textbox"].map(
-                (option) => (
-                  <Select.Option
-                    key={option}
-                    value={option.toLowerCase().replace(" ", "_")}
-                  >
-                    {option}
-                  </Select.Option>
-                )
-              )}
+            <Select
+              placeholder="Select type"
+              showSearch
+              onChange={(val) =>
+                setShowType(val === "Radio" || val === "Checkbox")
+              }
+            >
+              {[
+                "radio",
+                "button",
+                "checkbox",
+                "number",
+                "textbox",
+              ].map((type) => (
+                <Select.Option key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </Select.Option>
+              ))}
             </Select>
           </Form.Item>
 
-          {/* Attribute Options - Can be dynamic */}
-          {optionFields.map((field, index) => (
-            <Form.Item
-              key={index}
-              name={["options", index]}
-              label="Attribute Option Name"
-              rules={[{ required: true, message: "Please enter option name" }]}
+          {showType && (
+            <Form.List
+              name="options"
+              rules={[
+                { required: true, message: "Please add at least one option." },
+              ]}
             >
-              <Input
-                placeholder="Add Attribute Option"
-                addonAfter={
-                  index === optionFields.length - 1 ? (
-                    <PlusOutlined
-                      onClick={addOptionField}
-                      style={{ cursor: "pointer" }}
-                    />
-                  ) : null
-                }
-              />
-            </Form.Item>
-          ))}
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Form.Item
+                      key={key}
+                      label={name === 0 ? "Attribute Option Name" : ""}
+                      required
+                    >
+                      <Input.Group compact>
+                        <Form.Item
+                          {...restField}
+                          name={name}
+                          noStyle
+                          rules={[
+                            { required: true, message: "Enter option name" },
+                          ]}
+                        >
+                          <Input
+                            placeholder="Option name"
+                            style={{ width: "calc(100% - 32px)" }}
+                          />
+                        </Form.Item>
+                        <Button
+                          danger
+                          type="text"
+                          icon={<DeleteOutlined />}
+                          onClick={() => remove(name)}
+                        />
+                      </Input.Group>
+                    </Form.Item>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                    >
+                      Add Option
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+          )}
 
-          <Form.Item label="Status" name="is_active" initialValue={true}>
+          <Form.Item
+            label="Status"
+            name="is_active"
+            initialValue={true}
+            rules={[{ required: true, message: "Please select status" }]}
+          >
             <Radio.Group>
               <Radio value={true}>Active</Radio>
               <Radio value={false}>De-Active</Radio>
             </Radio.Group>
           </Form.Item>
 
-          <Form.Item name="is_required" valuePropName="checked">
-            <Checkbox>Required</Checkbox>
+          <Form.Item
+            name="is_required"
+            valuePropName="checked"
+            initialValue={false}
+            rules={[{ required: true, message: "Please check this box." }]}
+          >
+            <Checkbox>I Agree to T & C.</Checkbox>
           </Form.Item>
         </Form>
       </Modal>

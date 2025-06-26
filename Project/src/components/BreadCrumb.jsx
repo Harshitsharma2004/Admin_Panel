@@ -9,6 +9,13 @@ const pathToTitle = {
   "/dashboard/category": "Category",
   "/dashboard/sub_category": " Sub Category",
   "/dashboard/services": "Services",
+  "/dashboard/attributes": "Attributes",
+  "/dashboard/serviceProvider": "Service Provider",
+  "/dashboard/role": "Role ",
+  "/dashboard/sub_admin": "Sub Admin ",
+
+
+
 };
 
 export default function Breadcrumb() {

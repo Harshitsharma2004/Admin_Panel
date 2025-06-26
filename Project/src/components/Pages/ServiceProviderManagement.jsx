@@ -7,7 +7,7 @@ import { FaToggleOn, FaToggleOff } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Modal } from "antd";
 
-import { EditOutlined, DeleteOutlined,PlusOutlined } from "@ant-design/icons";
+import { EditOutlined, DeleteOutlined ,PlusOutlined} from "@ant-design/icons";
 
 
 import { Input } from "antd";
@@ -17,19 +17,15 @@ import { Spin, Empty } from "antd";
 import { DatePicker } from "antd";
 const { RangePicker } = DatePicker;
 import dayjs from "dayjs";
-import Breadcrumb from "./BreadCrumb";
+import Breadcrumb from "../BreadCrumb";
+import ProfileUploader from "../Profile/ProfileUploader";
 
-import ProfileUploader from "./Profile/ProfileUploader";
-
-function User() {
+function ServiceProvider() {
   const navigate = useNavigate();
   const [form] = Form.useForm();
-
   const location = useLocation();
   const [users, setUsers] = useState([]);
   const [showAddUser, setShowAddUser] = useState(false);
-
-  const [showSearch, setShowSearch] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -52,23 +48,15 @@ function User() {
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [userIdToDelete, setUserIdToDelete] = useState(null);
 
+  const [formErrors, setFormErrors] = useState({});
+
   const [newUser, setNewUser] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
-    role: "User",
     profile: null,
-  });
-
-  const [errors, setErrors] = useState({
-    email: "",
-    confirmPassword: "",
-  });
-
-  const [touchedFields, setTouchedFields] = useState({
-    confirmPassword: false,
   });
 
   const [filters, setFilters] = useState({
@@ -82,7 +70,7 @@ function User() {
   const [newStatusText, setNewStatusText] = useState(""); // For display
 
   useEffect(() => {
-    fetchUsers(currentPage, pageSize, sorter);
+    fetchProviders(currentPage, pageSize, sorter);
   }, [location.pathname, currentPage, pageSize, sorter]);
 
   useEffect(() => {
@@ -93,7 +81,7 @@ function User() {
     }
   }, [location.pathname]);
 
-  const fetchUsers = async (page = 1, pageSize = 10, sort = {}) => {
+  const fetchProviders = async (page = 1, pageSize = 10, sort = {}) => {
     const token = localStorage.getItem("authToken");
     if (!token) return;
 
@@ -103,7 +91,7 @@ function User() {
     const sortOrder = sort?.order === "ascend" ? "asc" : "desc";
 
     try {
-      const res = await axios.get("http://localhost:5000/users", {
+      const res = await axios.get("http://localhost:5000/provider", {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           page,
@@ -113,7 +101,7 @@ function User() {
         },
       });
 
-      setUsers(res.data.users || []);
+      setUsers(res.data.providers || []);
       setTotalUsers(res.data.total); // For AntD pagination
     } catch (err) {
       console.error("Error fetching users:", err);
@@ -140,41 +128,62 @@ function User() {
     });
     setSorter({});
     setIsSearchActive(false);
-    fetchUsers(currentPage, pageSize, sorter); // 👈 re-fetch default user list
+    fetchProviders(currentPage, pageSize, sorter); // 👈 re-fetch default user list
   };
 
   const handleAddUserInputChange = (e) => {
     const { name, value, files } = e.target;
+    const fieldValue = name === "profile" ? files[0] : value;
 
-    const updatedUser = {
-      ...newUser,
-      [name]: name === "profile" ? files[0] : value,
-    };
+    setNewUser((prevUser) => {
+      const updatedUser = { ...prevUser, [name]: fieldValue };
 
-    let updatedErrors = { ...errors };
+      const error = validateField(name, fieldValue, updatedUser);
+      const confirmError =
+        name === "password" || name === "confirmPassword"
+          ? validateField(
+              "confirmPassword",
+              updatedUser.confirmPassword,
+              updatedUser
+            )
+          : formErrors.confirmPassword;
 
-    // Email validation
-    if (name === "email") {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      updatedErrors.email = emailRegex.test(value)
-        ? ""
-        : "Invalid email format";
+      setFormErrors((prevErrors) => ({
+        ...prevErrors,
+        [name]: error,
+        confirmPassword: confirmError,
+      }));
+
+      return updatedUser;
+    });
+  };
+
+  const validateField = (name, value, user = newUser) => {
+    switch (name) {
+      case "firstName":
+      case "lastName":
+        return value.trim() === "" ? "This field is required" : "";
+      case "email":
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+          ? ""
+          : "Invalid email address";
+      case "password":
+        return validatePassword(value)
+          ? ""
+          : "Password must be at least 8 characters, include uppercase, lowercase, and a number";
+      case "confirmPassword":
+        // Only show error if user typed something
+        if (!value) return "";
+        return value !== user.password ? "Passwords do not match" : "";
+      default:
+        return "";
     }
+  };
 
-    // Always validate password match if either field is updated
-    if (
-      name === "password" ||
-      name === "confirmPassword" ||
-      touchedFields.confirmPassword
-    ) {
-      updatedErrors.confirmPassword =
-        updatedUser.password !== updatedUser.confirmPassword
-          ? "Passwords do not match"
-          : "";
-    }
-
-    setNewUser(updatedUser);
-    setErrors(updatedErrors);
+  const validatePassword = (password) => {
+    // At least 8 characters, one uppercase, one lowercase, one digit
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    return regex.test(password);
   };
 
   const handleSubmitUser = async (e) => {
@@ -198,7 +207,6 @@ function User() {
     formData.append("firstName", newUser.firstName);
     formData.append("lastName", newUser.lastName);
     formData.append("email", newUser.email);
-    formData.append("role", newUser.role);
     if (newUser.profile) formData.append("profile", newUser.profile);
 
     if (isEditMode) {
@@ -208,7 +216,7 @@ function User() {
         formData.append("_method", "PUT");
 
         const res = await axios.put(
-          `http://localhost:5000/users/${editingUserId}`,
+          `http://localhost:5000/provider/update/${editingUserId}`,
           formData,
           {
             headers: {
@@ -217,11 +225,12 @@ function User() {
           }
         );
 
-        const updatedUser = res.data.user;
-        setUsers(
-          users.map((u) => (u._id === updatedUser._id ? updatedUser : u))
-        );
         toast.success("User updated successfully");
+
+        setShowAddUser(false);
+        setIsEditMode(false);
+        setEditingUserId(null);
+        fetchProviders(currentPage, pageSize, sorter);
       } catch (err) {
         console.error("Error updating user:", err);
         toast.error("Failed to update user");
@@ -232,12 +241,6 @@ function User() {
       //   toast.error("Passwords are required and must match!");
       //   return;
       // }
-
-      const validatePassword = (password) => {
-        // At least 8 characters, one uppercase, one lowercase, one digit
-        const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
-        return regex.test(password);
-      };
 
       if (!validatePassword(newUser.password)) {
         toast.error(
@@ -252,7 +255,7 @@ function User() {
 
       try {
         const res = await axios.post(
-          "http://localhost:5000/addUser",
+          `http://localhost:5000/provider/create`,
           formData,
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -275,7 +278,6 @@ function User() {
       email: "",
       password: "",
       confirmPassword: "",
-      role: "",
       profile: null,
     });
     setShowAddUser(false);
@@ -310,6 +312,28 @@ function User() {
       });
       setIsStatusModalVisible(false);
     }
+  };
+
+  const isFormValid = () => {
+    const { firstName, lastName, email, password, confirmPassword } = newUser;
+
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      return false;
+    }
+
+    // In "Add" mode: password fields are required and must match
+    if (!isEditMode) {
+      if (
+        !password ||
+        !confirmPassword ||
+        password !== confirmPassword ||
+        !validatePassword(password)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
   };
 
   const columns = [
@@ -388,22 +412,21 @@ function User() {
           <Button
             icon={<EditOutlined />}
             onClick={() => {
+              setIsEditMode(true);
+              setShowAddUser(true);
+              setEditingUserId(record._id);
               setNewUser({
-                firstName: record.firstName || "",
-                lastName: record.lastName || "",
-                email: record.email || "",
+                firstName: record.firstName,
+                lastName: record.lastName,
+                email: record.email,
                 password: "",
                 confirmPassword: "",
                 profile: null,
               });
-              setIsEditMode(true);
-              setEditingUserId(record._id);
-              setShowAddUser(true);
-              setShowSearch(false);
               form.setFieldsValue({
-                firstName: record.firstName || "",
-                lastName: record.lastName || "",
-                email: record.email || "",
+                firstName: record.firstName,
+                lastName: record.lastName,
+                email: record.email,
               });
             }}
           />
@@ -428,7 +451,7 @@ function User() {
     const dateTo = customFilters.dateRange?.[1]?.format("YYYY-MM-DD");
 
     try {
-      const response = await axios.get("http://localhost:5000/users", {
+      const response = await axios.get("http://localhost:5000/provider", {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           query: customFilters.query,
@@ -442,8 +465,8 @@ function User() {
         },
       });
 
-      setUsers(response.data.users);
-      setTotalUsers(response.data.total);
+      setUsers(response.data.providers || []);
+      setTotalUsers(response.data.total || 0);
       setIsSearchActive(true);
     } catch (err) {
       console.error("Search error:", err);
@@ -463,8 +486,8 @@ function User() {
     if (!token || !userIdToDelete) return;
 
     try {
-      await axios.put(
-        `http://localhost:5000/users/${userIdToDelete}/delete`,
+      await axios.delete(
+        `http://localhost:5000/provider/delete/${userIdToDelete}`,
         null,
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -486,110 +509,107 @@ function User() {
 
   let debounceTimeout;
   const triggerLiveSearch = (updatedFilters) => {
+    if (showAddUser) return;
+
     clearTimeout(debounceTimeout);
     debounceTimeout = setTimeout(() => {
       handleSearch(updatedFilters);
     }, 500); // Adjust debounce delay if needed
   };
 
-  const isFormValid =
-    newUser.firstName &&
-    newUser.lastName &&
-    newUser.email &&
-    (!isEditMode ? newUser.password && newUser.confirmPassword : true) &&
-    !errors.email &&
-    !errors.confirmPassword;
-
   return (
     <div className="user-container">
       <Breadcrumb />
 
       <Card
-        title={<h2 className="users-heading">All Users</h2>}
+        title={<h2 className="users-heading">All Service Providers</h2>}
         extra={
           <>
-            <Space wrap size="middle" className="subcategory-controls">
-              <Input
-                placeholder="Search by name or email"
-                name="query"
-                value={filters.query}
-                onChange={handleSearchInputChange}
-                onPressEnter={handleSearch}
-                allowClear
-                style={{ width: 200 }}
-                suffix={
-                  <IoSearch
-                    onClick={handleSearch}
-                    style={{ cursor: "pointer" }}
-                  />
-                }
-              />
+            {!showAddUser && (
+              <Space wrap size="middle" className="subcategory-controls">
+                <Input
+                  placeholder="Search by name or email"
+                  name="query"
+                  value={filters.query}
+                  onChange={handleSearchInputChange}
+                  onPressEnter={handleSearch}
+                  allowClear
+                  style={{ width: 200 }}
+                  suffix={
+                    <IoSearch
+                      onClick={handleSearch}
+                      style={{ cursor: "pointer" }}
+                    />
+                  }
+                />
 
-              <Select
-                placeholder="Filter by status"
-                onChange={(value) => {
-                  const updated = { ...filters, status: value };
-                  setFilters(updated);
-                  triggerLiveSearch(updated);
-                }}
-                value={filters.status}
-                style={{ width: 180 }}
-                allowClear
-              >
-                <Select.Option value="Active">Active</Select.Option>
-                <Select.Option value="Inactive">Inactive</Select.Option>
-              </Select>
+                <Select
+                  placeholder="Filter by status"
+                  onChange={(value) => {
+                    const updated = { ...filters, status: value };
+                    setFilters(updated);
+                    triggerLiveSearch(updated);
+                  }}
+                  value={filters.status}
+                  style={{ width: 180 }}
+                  allowClear
+                >
+                  <Select.Option value="Active">Active</Select.Option>
+                  <Select.Option value="Inactive">Inactive</Select.Option>
+                </Select>
 
-              <RangePicker
-                onChange={(dates) => {
-                  setSelectedDateRange(dates);
-                  const updated = { ...filters, dateRange: dates };
-                  setFilters(updated);
-                  triggerLiveSearch(updated);
-                }}
-                value={selectedDateRange}
-                disabledDate={(current) =>
-                  current && current > dayjs().endOf("day")
-                }
-              />
+                <RangePicker
+                  onChange={(dates) => {
+                    setSelectedDateRange(dates);
+                    const updated = { ...filters, dateRange: dates };
+                    setFilters(updated);
+                    triggerLiveSearch(updated);
+                  }}
+                  value={selectedDateRange}
+                  disabledDate={(current) =>
+                    current && current > dayjs().endOf("day")
+                  }
+                />
 
-              <Button
-                danger
-                onClick={() => {
-                  setFilters({
-                    query: "",
-                    status: "",
-                    dateRange: null,
-                  });
-                  setSelectedDateRange([]);
-                  setCurrentPage(1);
-                  fetchUsers(1, pageSize, sorter);
-                }}
-              >
-                Reset
-              </Button>
+                <Button
+                  danger
+                  onClick={() => {
+                    setFilters({
+                      query: "",
+                      status: "",
+                      dateRange: null,
+                    });
+                    setSelectedDateRange([]);
+                    setCurrentPage(1);
+                    fetchProviders(1, pageSize, sorter);
+                  }}
+                >
+                  Reset
+                </Button>
 
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => {
-                  setIsEditMode(false);
-                  setEditingUserId(null);
-                  setNewUser({
-                    firstName: "",
-                    lastName: "",
-                    email: "",
-                    password: "",
-                    confirmPassword: "",
-                    role: "User",
-                    profile: null,
-                  });
-                  setShowAddUser(true);
-                }}
-              >
-                Add User
-              </Button>
-            </Space>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setIsEditMode(false);
+                    setEditingUserId(null);
+                    setShowAddUser(true);
+                    const emptyUser = {
+                      firstName: "",
+                      lastName: "",
+                      email: "",
+                      password: "",
+                      confirmPassword: "",
+                      profile: null,
+                    };
+                    setNewUser(emptyUser);
+                    form.setFieldsValue(emptyUser);
+                  }}
+                >
+                  Add Provider
+                </Button>
+              </Space>
+            )}
           </>
         }
       >
@@ -654,42 +674,61 @@ function User() {
         title={isEditMode ? "Edit User" : "Add New User"}
         open={showAddUser}
         onCancel={() => {
+          const emptyUser = {
+            firstName: "",
+            lastName: "",
+            email: "",
+            password: "",
+            confirmPassword: "",
+            profile: null,
+          };
+
           setShowAddUser(false);
           setIsEditMode(false);
           setEditingUserId(null);
-          form.resetFields();
+          setNewUser(emptyUser);
+          form.setFieldsValue(emptyUser);
         }}
         onOk={() => form.submit()}
         okText={isEditMode ? "Update" : "Create"}
-        confirmLoading={isSubmitting}
+        okButtonProps={{
+          loading: isSubmitting,
+        }}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" onFinish={handleSubmitUser}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmitUser}
+          onValuesChange={(changed, all) => {
+            setNewUser(all);
+          }}
+        >
           <Form.Item
             label="First Name"
             name="firstName"
-            rules={[{ required: true, message: "Please enter first name" }]}
+            rules={[{ required: true, message: "First name is required" }]}
           >
-            <Input placeholder="First Name" />
+            <Input />
           </Form.Item>
 
           <Form.Item
             label="Last Name"
             name="lastName"
-            rules={[{ required: true, message: "Please enter last name" }]}
+            rules={[{ required: true, message: "Last name is required" }]}
           >
-            <Input placeholder="Last Name" />
+            <Input />
           </Form.Item>
 
           <Form.Item
             label="Email"
             name="email"
             rules={[
-              { required: true, message: "Please enter email" },
+              { required: true, message: "Email is required" },
               { type: "email", message: "Enter a valid email" },
             ]}
           >
-            <Input placeholder="Email" />
+            <Input />
           </Form.Item>
 
           {!isEditMode && (
@@ -698,26 +737,23 @@ function User() {
                 label="Password"
                 name="password"
                 rules={[
-                  { required: true, message: "Please enter password" },
+                  { required: true, message: "Password is required" },
                   {
-                    pattern:
-                      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{6,}$/,
+                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/,
                     message:
-                      "Password must contain upper, lower, number & special char",
+                      "Must include uppercase, lowercase, number, special char",
                   },
                 ]}
-                hasFeedback
               >
-                <Input.Password placeholder="Password" />
+                <Input.Password />
               </Form.Item>
 
               <Form.Item
                 label="Confirm Password"
                 name="confirmPassword"
                 dependencies={["password"]}
-                hasFeedback
                 rules={[
-                  { required: true, message: "Please confirm password" },
+                  { required: true, message: "Confirm your password" },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       if (!value || getFieldValue("password") === value) {
@@ -728,7 +764,7 @@ function User() {
                   }),
                 ]}
               >
-                <Input.Password placeholder="Confirm Password" />
+                <Input.Password />
               </Form.Item>
             </>
           )}
@@ -740,4 +776,4 @@ function User() {
   );
 }
 
-export default User;
+export default ServiceProvider;

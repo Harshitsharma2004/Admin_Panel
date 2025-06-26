@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Modal, Space, message, DatePicker, Input, Card } from "antd";
+import {
+  Table,
+  Button,
+  Modal,
+  Space,
+  message,
+  DatePicker,
+  Input,
+  Card,
+  Form,
+} from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
@@ -7,9 +17,13 @@ import dayjs from "dayjs";
 import { toast } from "react-toastify";
 import Breadcrumb from "../BreadCrumb";
 
+import ProfileUploader from "../Profile/ProfileUploader";
+
 const { RangePicker } = DatePicker;
 
 const Category = () => {
+  const [form] = Form.useForm();
+
   const [categories, setCategories] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -208,29 +222,20 @@ const Category = () => {
       render: (_, record) => (
         <Space>
           <Button
-            type="primary"
             icon={<EditOutlined />}
             onClick={() => {
-              setEditingCategory(record);
-              setNewCategory({
-                name: record.name,
-                sort_order: record.sort_order,
-                profile: null,
-              });
+              setNewCategory(record);
+              form.setFieldsValue(record);
               setIsEditModalVisible(true);
             }}
-          >
-            Edit
-          </Button>
+          />
           <Button
-            danger
             icon={<DeleteOutlined />}
+            danger
             onClick={() => {
               showDeleteConfirm(record._id);
             }}
-          >
-            Delete
-          </Button>
+          />
         </Space>
       ),
     },
@@ -243,87 +248,98 @@ const Category = () => {
       </div> */}
 
       <Breadcrumb />
-        <Card title={        <h2 className="category-heading">All Categories</h2>
-}
-        extra={<>
-         <div
-          className="category-controls"
-          style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
-        >
-          <Input
-            placeholder="Search by name..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setPage(1);
-            }}
-            style={{ width: 200 }}
-          />
+      <Card
+        title={<h2 className="category-heading">All Categories</h2>}
+        extra={
+          <>
+            <div
+              className="category-controls"
+              style={{ display: "flex", gap: 10, flexWrap: "wrap" }}
+            >
+              <Input
+                placeholder="Search by name..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setPage(1);
+                }}
+                style={{ width: 200 }}
+              />
 
-          <RangePicker
-            value={dateFrom && dateTo ? [dayjs(dateFrom), dayjs(dateTo)] : null}
-            onChange={(dates, dateStrings) => {
-              setDateFrom(dateStrings[0] || null);
-              setDateTo(dateStrings[1] || null);
-              setPage(1);
-            }}
-            disabledDate={(current) =>
-              current && current > dayjs().endOf("day")
+              <RangePicker
+                value={
+                  dateFrom && dateTo ? [dayjs(dateFrom), dayjs(dateTo)] : null
+                }
+                onChange={(dates, dateStrings) => {
+                  setDateFrom(dateStrings[0] || null);
+                  setDateTo(dateStrings[1] || null);
+                  setPage(1);
+                }}
+                disabledDate={(current) =>
+                  current && current > dayjs().endOf("day")
+                }
+                allowClear
+              />
+              <Button
+                danger
+                onClick={() => {
+                  setSearchTerm("");
+                  setDateFrom(null);
+                  setDateTo(null);
+                  setPage(1);
+                }}
+              >
+                Reset
+              </Button>
+
+
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setNewCategory({ name: "", sort_order: "", profile: null });
+                  form.resetFields();
+                  setIsAddModalVisible(true);
+                }}
+              >
+                Add Category
+              </Button>
+            </div>
+          </>
+        }
+      >
+        <Table
+          columns={columns}
+          dataSource={categories}
+          rowKey="_id"
+          bordered
+          loading={loading}
+          scroll={{ x: "max-content" }}
+          pagination={{
+            current: page,
+            pageSize,
+            total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            pageSizeOptions: ["5", "10", "20", "50"],
+            onChange: (current, size) => {
+              setPage(current);
+              setPageSize(size);
+            },
+          }}
+          onChange={(pagination, filters, sorterObj) => {
+            if (sorterObj.order) {
+              setSorter({
+                field: sorterObj.field,
+                order: sorterObj.order,
+              });
             }
-            allowClear
-          />
-
-          <Button
-            onClick={() => {
-              setSearchTerm("");
-              setDateFrom(null);
-              setDateTo(null);
-              setPage(1);
-            }}
-          >
-            Reset Filters
-          </Button>
-
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setIsAddModalVisible(true);
-            }}
-          >
-            Add Category
-          </Button>
-        </div>
-        </>}>
-         <Table
-        columns={columns}
-        dataSource={categories}
-        rowKey="_id"
-        bordered
-        loading={loading}
-        pagination={{
-          current: page,
-          pageSize,
-          total,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          pageSizeOptions: ["5", "10", "20", "50"],
-          onChange: (current, size) => {
-            setPage(current);
-            setPageSize(size);
-          },
-        }}
-        onChange={(pagination, filters, sorterObj) => {
-          if (sorterObj.order) {
-            setSorter({
-              field: sorterObj.field,
-              order: sorterObj.order,
-            });
-          }
-        }}
-        locale={{ emptyText: loading ? "Loading..." : "No categories found." }}
-      /></Card>
-     
+          }}
+          locale={{
+            emptyText: loading ? "Loading..." : "No categories found.",
+          }}
+        />
+      </Card>
 
       <Modal
         title="Confirm Delete"
@@ -343,98 +359,110 @@ const Category = () => {
       <Modal
         title="Add Category"
         open={isAddModalVisible}
-        onOk={handleAddCategory}
+        onOk={() => form.submit()}
         onCancel={() => {
           setIsAddModalVisible(false);
-          setNewCategory({ name: "", sort_order: "asc", profile: null });
+          form.resetFields();
+          setNewCategory({ name: "", sort_order: "", profile: null });
           navigate("/dashboard/category");
         }}
         okText="Add"
         cancelText="Cancel"
-        okButtonProps={{ disabled: !isFormValid(), loading: addLoading }}
+        okButtonProps={{ loading: addLoading }}
       >
-        <label>Name:</label>
-        <Input
-          value={newCategory.name}
-          onChange={(e) =>
-            setNewCategory({ ...newCategory, name: e.target.value })
-          }
-          style={{ marginBottom: 10 }}
-        />
-        <label>Sort Order:</label>
-        <Input
-          type="number"
-          value={newCategory.sort_order}
-          onChange={(e) =>
-            setNewCategory({
-              ...newCategory,
-              sort_order: e.target.value === "" ? "" : parseInt(e.target.value),
-            })
-          }
-          min={1}
-          style={{ marginBottom: 10 }}
-        />
-        <label>Profile Image:</label>
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(e) =>
-            setNewCategory({ ...newCategory, profile: e.target.files[0] })
-          }
-        />
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={newCategory}
+          onFinish={handleAddCategory}
+        >
+          <Form.Item
+            label="Category Name"
+            name="name"
+            rules={[{ required: true, message: "Please enter category name" }]}
+          >
+            <Input
+              onChange={(e) =>
+                setNewCategory((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Sort Order"
+            name="sort_order"
+            rules={[{ required: true, message: "Please enter sort order" }]}
+          >
+            <Input
+              type="number"
+              min={1}
+              onChange={(e) =>
+                setNewCategory((prev) => ({
+                  ...prev,
+                  sort_order:
+                    e.target.value === "" ? "" : parseInt(e.target.value),
+                }))
+              }
+            />
+          </Form.Item>
+
+          <ProfileUploader />
+        </Form>
       </Modal>
 
       <Modal
         title="Edit Category"
         open={isEditModalVisible}
-        onOk={handleUpdateCategory}
+        onOk={() => form.submit()}
         onCancel={() => {
           setIsEditModalVisible(false);
           setEditingCategory(null);
-          setNewCategory({ name: "", sort_order: "asc", profile: null });
+          form.resetFields();
+          setNewCategory({ name: "", sort_order: "", profile: null });
           navigate("/dashboard/category");
         }}
         okText="Update"
         cancelText="Cancel"
-        okButtonProps={{ disabled: !isFormValid(), loading: editLoading }}
+        okButtonProps={{ loading: editLoading }}
       >
-        <label>Name:</label>
-        <Input
-          value={newCategory.name}
-          onChange={(e) =>
-            setNewCategory({ ...newCategory, name: e.target.value })
-          }
-          style={{ marginBottom: 10 }}
-        />
-        <label>Sort Order:</label>
-        <Input
-          type="number"
-          value={newCategory.sort_order}
-          onChange={(e) =>
-            setNewCategory({
-              ...newCategory,
-              sort_order: e.target.value === "" ? "" : parseInt(e.target.value),
-            })
-          }
-          min={1}
-          style={{ marginBottom: 10 }}
-        />
-        <label>Profile Image (optional):</label>
-        <Input
-          type="file"
-          accept="image/*"
-          onChange={(e) =>
-            setNewCategory({ ...newCategory, profile: e.target.files[0] })
-          }
-        />
-        {editingCategory?.profile && (
-          <img
-            src={`http://localhost:5000/${editingCategory.profile}`}
-            alt="Preview"
-            width={100}
-            style={{ marginTop: 10, borderRadius: 4 }}
-          />
-        )}
+        <Form
+          form={form}
+          layout="vertical"
+          initialValues={newCategory}
+          onFinish={handleUpdateCategory}
+        >
+          <Form.Item
+            label="Category Name"
+            name="name"
+            rules={[{ required: true, message: "Please enter category name" }]}
+          >
+            <Input
+              onChange={(e) =>
+                setNewCategory((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Sort Order"
+            name="sort_order"
+            rules={[{ required: true, message: "Please enter sort order" }]}
+          >
+            <Input
+              type="number"
+              min={1}
+              onChange={(e) =>
+                setNewCategory((prev) => ({
+                  ...prev,
+                  sort_order:
+                    e.target.value === "" ? "" : parseInt(e.target.value),
+                }))
+              }
+            />
+          </Form.Item>
+
+          <ProfileUploader />
+        </Form>
       </Modal>
     </div>
   );

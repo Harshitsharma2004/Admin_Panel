@@ -11,6 +11,7 @@ import {
   DatePicker,
   Skeleton,
   Card,
+  Form,
 } from "antd";
 import {
   PlusOutlined,
@@ -26,11 +27,14 @@ import { toast } from "react-toastify";
 import Breadcrumb from "../BreadCrumb";
 import { debounce } from "lodash";
 
+import ProfileUploader from "../Profile/ProfileUploader";
+
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
 const ServiceManagement = () => {
   const navigate = useNavigate();
+  const [form] = Form.useForm();
 
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +68,7 @@ const ServiceManagement = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    category: "",
+    category: null,
     subCategories: [],
     sort_order: "",
     min_price: "",
@@ -73,7 +77,6 @@ const ServiceManagement = () => {
   });
 
   const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState(null);
 
   useEffect(() => {
     fetchCategories();
@@ -101,7 +104,6 @@ const ServiceManagement = () => {
         sortField,
         sortOrder: sortOrder === "ascend" ? "asc" : "desc",
       };
-
 
       const res = await axios.get("http://localhost:5000/service", { params });
       setServices(res.data.services);
@@ -152,12 +154,17 @@ const ServiceManagement = () => {
     setFilters((prev) => ({ ...prev, dateRange: dates }));
   };
 
-  const handleSave = async () => {
+  const handleSave = async (values) => {
     setFormLoading(true);
-    setFormError(null);
     const payload = new FormData();
-    Object.entries(formData).forEach(([key, value]) => {
-      if (key === "subCategories") {
+
+    const fullFormData = {
+      ...formData, // file/image etc.
+      ...values, // validated inputs from the form
+    };
+
+    Object.entries(fullFormData).forEach(([key, value]) => {
+      if (key === "subCategories" && Array.isArray(value)) {
         value.forEach((id) => payload.append("subCategories[]", id));
       } else {
         payload.append(key, value);
@@ -175,6 +182,7 @@ const ServiceManagement = () => {
         await axios.post("http://localhost:5000/service/create", payload);
         toast.success("Service created successfully");
       }
+
       fetchServices();
       setIsModalVisible(false);
     } catch (error) {
@@ -267,7 +275,6 @@ const ServiceManagement = () => {
                 profile: null,
               });
               setSelected(record);
-              setFormError(null);
               setIsModalVisible(true);
               navigate(`/dashboard/services`);
             }}
@@ -305,14 +312,13 @@ const ServiceManagement = () => {
                     setIsEdit(false);
                     setFormData({
                       name: "",
-                      category: "",
+                      category: null,
                       subCategories: [],
                       sort_order: "",
                       min_price: "",
                       max_price: "",
                       profile: null,
                     });
-                    setFormError(null);
                     setIsModalVisible(true);
                     navigate("/dashboard/services");
                   }}
@@ -396,6 +402,7 @@ const ServiceManagement = () => {
             dataSource={services}
             columns={columns}
             rowKey="_id"
+            scroll={{ x: "max-content" }}
             pagination={{
               current: page,
               pageSize,
@@ -425,99 +432,92 @@ const ServiceManagement = () => {
           if (!formLoading) {
             setIsModalVisible(false);
             navigate("/dashboard/services");
-            setFormError(null);
           }
         }}
-        onOk={handleSave}
+        onOk={() => form.submit()}
         okButtonProps={{
           loading: formLoading,
-          disabled: !!formError,
         }}
         cancelButtonProps={{
           disabled: formLoading,
         }}
         maskClosable={!formLoading}
       >
-        {formError && (
-          <div style={{ color: "red", marginBottom: 10 }}>{formError}</div>
-        )}
-
-        <Input
-          placeholder="Service Name"
-          value={formData.name}
-          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          style={{ marginBottom: 10 }}
-        />
-
-        <Select
-          placeholder="Select Category"
-          value={formData.category}
-          onChange={(val) =>
-            setFormData({ ...formData, category: val, subCategories: [] })
-          }
-          style={{ width: "100%", marginBottom: 10 }}
+        <Form
+          layout="vertical"
+          form={form}
+          initialValues={formData}
+          onFinish={handleSave}
         >
-          {categories.map((cat) => (
-            <Option key={cat._id} value={cat._id}>
-              {cat.name}
-            </Option>
-          ))}
-        </Select>
+          <Form.Item
+            label="Service Name"
+            name="name"
+            rules={[{ required: true, message: "Please enter service name" }]}
+          >
+            <Input />
+          </Form.Item>
 
-        <Select
-          mode="tags"
-          placeholder="Select Subcategories"
-          value={formData.subCategories}
-          onChange={(val) => setFormData({ ...formData, subCategories: val })}
-          style={{ width: "100%", marginBottom: 10 }}
-        >
-          {subCategories
-            .filter(
-              (sub) =>
-                !formData.category || sub.category?._id === formData.category
-            )
-            .map((sub) => (
-              <Option key={sub._id} value={sub._id}>
-                {sub.name}
-              </Option>
-            ))}
-        </Select>
+          <Form.Item
+            label="Category"
+            name="category"
+            rules={[{ required: true, message: "Please select a category" }]}
+          >
+            <Select placeholder="Select Category">
+              {categories.map((cat) => (
+                <Option key={cat._id} value={cat._id}>
+                  {cat.name}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
 
-        <Input
-          type="number"
-          placeholder="Sort Order"
-          value={formData.sort_order}
-          onChange={(e) =>
-            setFormData({ ...formData, sort_order: e.target.value })
-          }
-          style={{ marginBottom: 10 }}
-        />
-        <Input
-          type="number"
-          placeholder="Min Price"
-          value={formData.min_price}
-          onChange={(e) =>
-            setFormData({ ...formData, min_price: e.target.value })
-          }
-          style={{ marginBottom: 10 }}
-        />
-        <Input
-          type="number"
-          placeholder="Max Price"
-          value={formData.max_price}
-          onChange={(e) =>
-            setFormData({ ...formData, max_price: e.target.value })
-          }
-          style={{ marginBottom: 10 }}
-        />
-        <Upload
-          beforeUpload={(file) => {
-            setFormData({ ...formData, profile: file });
-            return false;
-          }}
-        >
-          <Button icon={<UploadOutlined />}>Upload Image</Button>
-        </Upload>
+          <Form.Item
+            label="Subcategories"
+            name="subCategories"
+            rules={[{ required: true, message: "Please select sub category" }]}
+          >
+            <Select
+              mode="tags"
+              placeholder="Select Subcategories"
+              options={subCategories
+                .filter(
+                  (sub) =>
+                    !form.getFieldValue("category") ||
+                    sub.category?._id === form.getFieldValue("category")
+                )
+                .map((sub) => ({
+                  label: sub.name,
+                  value: sub._id,
+                }))}
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Sort Order"
+            name="sort_order"
+            rules={[{ required: true, message: "Please enter sort order" }]}
+          >
+            <Input type="number" min={0} />
+          </Form.Item>
+
+          <Form.Item
+            label="Min Price"
+            name="min_price"
+            rules={[{ required: true, message: "Please enter minimum price" }]}
+          >
+            <Input type="number" min={0} />
+          </Form.Item>
+
+          <Form.Item
+            label="Max Price"
+            name="max_price"
+            rules={[{ required: true, message: "Please enter maximum price" }]}
+          >
+            <Input type="number" min={0} />
+          </Form.Item>
+
+          <ProfileUploader />
+        </Form>
       </Modal>
 
       <Modal

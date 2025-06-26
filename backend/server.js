@@ -8,6 +8,10 @@ const subCategoryRoutes = require('./routes/subCategoryRoutes')
 const serviceRoutes = require('./routes/serviceRoutes')
 const stats = require('./routes/stats')
 const attribute = require('./routes/attribute')
+const provider = require('./routes/providerRoutes')
+const role = require('./routes/roleRoutes')
+const subAdmin = require('./routes/subAdmin')
+
 
 const methodOverride = require("method-override");
 
@@ -35,6 +39,12 @@ app.use('/subcategory', subCategoryRoutes);
 app.use('/service', serviceRoutes);
 app.use('/stats',stats)
 app.use('/attribute',attribute)
+app.use('/provider',provider)
+app.use('/roles',role)
+app.use('/subAdmin',subAdmin)
+
+
+
 
 
 

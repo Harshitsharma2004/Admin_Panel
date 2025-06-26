@@ -149,10 +149,15 @@ exports.updateSubCategory = async (req, res) => {
 
     const updatedFields = { name, sort_order, category };
 
+    const existingSubCategory = await SubCategory.findById(id);
+    if (!existingSubCategory) {
+      return res.status(404).json({ message: "SubCategory not found" });
+    }
+
     // If sort_order is being changed, check for duplicate
     if (
       sort_order &&
-      parseInt(sort_order) !== existingService.sort_order
+      parseInt(sort_order) !== existingSubCategory.sort_order
     ) {
       const existingSort = await Service.findOne({ sort_order: parseInt(sort_order) });
       if (existingSort) {

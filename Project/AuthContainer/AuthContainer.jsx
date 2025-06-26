@@ -5,25 +5,19 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext();
-
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider = ({ children }) => {
-  // Initialize view based on token presence in localStorage
   const [view, setView] = useState(() =>
     localStorage.getItem("authToken") ? "dashboard" : "login"
   );
   const navigate = useNavigate();
 
-  // Initialize email from localStorage
-  const [email, setEmail] = useState(
-    () => localStorage.getItem("userEmail") || ""
-  );
-
-  // User data
+  const [email, setEmail] = useState(() => localStorage.getItem("userEmail") || "");
   const [user, setUser] = useState(null);
+  const [role, setRole] = useState("");             // in-memory only
+  const [permissions, setPermissions] = useState([]); // in-memory only
 
-  // Fetch user data from backend
   const fetchUserData = async () => {
     const token = localStorage.getItem("authToken");
     if (!token) return;
@@ -37,26 +31,26 @@ export const AuthProvider = ({ children }) => {
 
       if (res.ok) {
         const data = await res.json();
-        // console.log(data)
         setUser(data);
+
+        if (data.role) setRole(data.role);
+        if (Array.isArray(data.permissions)) setPermissions(data.permissions);
       } else {
-        console.warn("Invalid or expired token");
-        setUser(null);
-        localStorage.removeItem("authToken");
-        setView("login");
+        console.warn("Invalid token");
+        logout();
       }
     } catch (err) {
       console.error("Error fetching user data", err);
-      setUser(null);
+      logout();
     }
   };
 
-  // Call it once when app loads
   useEffect(() => {
     if (localStorage.getItem("authToken")) {
       fetchUserData();
     }
   }, []);
+
 
   const switchView = (newView, emailValue = "") => {
     setView(newView);
@@ -66,15 +60,26 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("userEmail");
-    toast.success("Logout Successfull.");
     setUser(null);
+    setRole("");
+    setPermissions([]);
     setView("login");
     navigate("/login");
+    toast.success("Logout Successful.");
   };
 
   return (
     <AuthContext.Provider
-      value={{ view, email, user, switchView, fetchUserData, logout }}
+      value={{
+        view,
+        email,
+        user,
+        role,
+        permissions,
+        switchView,
+        fetchUserData,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

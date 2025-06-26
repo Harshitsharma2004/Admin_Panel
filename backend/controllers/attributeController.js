@@ -16,13 +16,18 @@ exports.createAttribute = async (req, res) => {
 
     let attributeOptions = req.body.options || req.body['options[]'];
 
-    // console.log("Requested Body: ",req.body)
+    const requiresOptions = ["Radio", "Checkbox"]; // or include "Button" if you really need
 
-    if (!name || !category || !service || !sort_order || !type || !attributeOptions) {
+    if (!name || !category || !service || !sort_order || !type) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
-    if(!Array.isArray(attributeOptions)){
+    if (requiresOptions.includes(type) && !attributeOptions) {
+      return res.status(400).json({ message: "Options are required for this type." });
+    }
+
+
+    if (!Array.isArray(attributeOptions)) {
       attributeOptions = [attributeOptions];
     }
 
@@ -43,8 +48,9 @@ exports.createAttribute = async (req, res) => {
       is_required,
       is_active,
       type,
-      attribute_name: attributeOptions,
+      ...(requiresOptions.includes(type) && { attribute_name: attributeOptions }),
     });
+
 
     await newAttribute.save();
     res.status(201).json({ message: "Attribute created successfully.", data: newAttribute });

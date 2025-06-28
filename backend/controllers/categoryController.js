@@ -121,6 +121,9 @@ exports.updateCategory = async (req, res) => {
     const { id } = req.params;
     const { name, profile, sort_order } = req.body;
 
+//     console.log("Incoming File:", req.file);
+//   console.log("Body:", req.body);
+
     try {
         // Check if the category exists
         const category = await EventCategory.findById(id);

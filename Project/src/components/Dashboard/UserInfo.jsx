@@ -89,6 +89,7 @@ export default function DashboardStats() {
 
   const labels = [
     "Users",
+    "Sub Admins",
     "Categories",
     "Sub Categories",
     "Services",
@@ -96,6 +97,7 @@ export default function DashboardStats() {
   ];
   const values = [
     stats.users,
+    stats.subAdmins,
     stats.categories,
     stats.subCategories,
     stats.services,

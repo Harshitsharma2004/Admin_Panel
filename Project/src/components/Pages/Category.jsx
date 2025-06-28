@@ -46,6 +46,7 @@ const Category = () => {
     sort_order: "asc",
     profile: null,
   });
+  
 
   const [addLoading, setAddLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
@@ -190,7 +191,7 @@ const Category = () => {
       key: "profile",
       render: (img) => (
         <img
-          src={img ? `http://localhost:5000/${img}` : "/default.png"}
+          src={img ? `http://localhost:5000/uploads/${profile}` : "/default.png"}
           alt="category"
           width={50}
           style={{ borderRadius: "4px", objectFit: "cover" }}
@@ -224,6 +225,7 @@ const Category = () => {
           <Button
             icon={<EditOutlined />}
             onClick={() => {
+              setEditingCategory(record);
               setNewCategory(record);
               form.setFieldsValue(record);
               setIsEditModalVisible(true);
@@ -291,7 +293,6 @@ const Category = () => {
               >
                 Reset
               </Button>
-
 
               <Button
                 type="primary"
@@ -406,7 +407,12 @@ const Category = () => {
             />
           </Form.Item>
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={newCategory.profile}
+            onChange={(file) =>
+              setNewCategory((prev) => ({ ...prev, profile: file }))
+            }
+          />
         </Form>
       </Modal>
 
@@ -461,7 +467,12 @@ const Category = () => {
             />
           </Form.Item>
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={newCategory.profile}
+            onChange={(file) =>
+              setNewCategory((prev) => ({ ...prev, profile: file }))
+            }
+          />
         </Form>
       </Modal>
     </div>

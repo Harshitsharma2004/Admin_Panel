@@ -1,8 +1,9 @@
-import { Upload, Button, Modal, message } from "antd";
+import { Upload, Button, Modal } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
-const ProfileUploader = () => {
+const ProfileUploader = ({ value, onChange }) => {
   const [fileList, setFileList] = useState([]);
   const [previewImage, setPreviewImage] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -14,13 +15,14 @@ const ProfileUploader = () => {
     }
     setPreviewImage(file.url || file.preview);
     setPreviewOpen(true);
-    setPreviewTitle(file.name || file.url.substring(file.url.lastIndexOf("/") + 1));
+    setPreviewTitle(
+      file.name || file.url?.substring(file.url.lastIndexOf("/") + 1)
+    );
   };
 
   const handleChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
-    // Optional: Save to form state
-    // setNewUser((prev) => ({ ...prev, profile: newFileList[0]?.originFileObj || null }));
+    onChange(newFileList[0]?.originFileObj || null); // 🔁 Set the file outside
   };
 
   const getBase64 = (file) =>
@@ -36,15 +38,41 @@ const ProfileUploader = () => {
       <Upload
         listType="picture"
         fileList={fileList}
-        beforeUpload={() => false} // Prevent auto-upload
+        maxCount={1}
+        beforeUpload={(file) => {
+          const isImage = file.type.startsWith("image/");
+          const isLt2M = file.size / 1024 / 1024 < 2;
+
+          if (!isImage) {
+            toast.error("Only image files (jpg, png, etc.) are allowed.");
+            return Upload.LIST_IGNORE;
+          }
+
+          if (!isLt2M) {
+            toast.error("Image must be smaller than 2MB.");
+            return Upload.LIST_IGNORE;
+          }
+
+          return false;
+        }}
         onPreview={handlePreview}
         onChange={handleChange}
-        maxCount={1}
       >
         <Button icon={<UploadOutlined />}>Upload</Button>
       </Upload>
 
-      <Modal open={previewOpen} title={previewTitle} footer={null} onCancel={() => setPreviewOpen(false)}>
+      {fileList.length === 0 && (
+        <div style={{ marginTop: 8, color: "#888", fontSize: 13 }}>
+          Please upload an image (JPG/PNG) under 2MB.
+        </div>
+      )}
+
+      <Modal
+        open={previewOpen}
+        title={previewTitle}
+        footer={null}
+        onCancel={() => setPreviewOpen(false)}
+      >
         <img alt="Preview" style={{ width: "100%" }} src={previewImage} />
       </Modal>
     </>

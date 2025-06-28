@@ -7,8 +7,7 @@ import { FaToggleOn, FaToggleOff } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Modal } from "antd";
 
-import { EditOutlined, DeleteOutlined,PlusOutlined } from "@ant-design/icons";
-
+import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
 import { Input } from "antd";
 const { Search } = Input;
@@ -205,8 +204,6 @@ function User() {
       // Edit mode
       // console.log("User ID: ", editingUserId);
       try {
-        formData.append("_method", "PUT");
-
         const res = await axios.put(
           `http://localhost:5000/users/${editingUserId}`,
           formData,
@@ -733,7 +730,12 @@ function User() {
             </>
           )}
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={newUser.profile}
+            onChange={(file) =>
+              setNewUser((prev) => ({ ...prev, profile: file }))
+            }
+          />
         </Form>
       </Modal>
     </div>

@@ -45,6 +45,8 @@ const SubAdminManagement = () => {
   const [newStatusText, setNewStatusText] = useState("");
   const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
 
+  const [isSubmitting,setIsSubmitting]=useState(false);
+
   useEffect(() => {
     fetchRoles();
     fetchSubAdmins();
@@ -90,6 +92,7 @@ const SubAdminManagement = () => {
   };
 
   const handleFinish = async (values) => {
+    setIsSubmitting(true);
     try {
       if (isEditMode) {
         await axios.put(
@@ -107,6 +110,8 @@ const SubAdminManagement = () => {
       fetchSubAdmins();
     } catch (err) {
       toast.error(err.response?.data?.message || "Operation failed.");
+    }finally{
+      setIsSubmitting(false);
     }
   };
 
@@ -391,7 +396,7 @@ const SubAdminManagement = () => {
           </Form.Item>
           <ProfileUploader/>
           <Form.Item>
-            <Button htmlType="submit" type="primary" block style={{marginTop:"10px"}}>
+            <Button htmlType="submit" type="primary" block style={{marginTop:"10px"}} loading={isSubmitting}>
               {isEditMode ? "Update" : "Create"}
             </Button>
           </Form.Item>

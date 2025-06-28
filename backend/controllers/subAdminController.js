@@ -2,6 +2,25 @@ const mongoose = require('mongoose');
 const User = require('../model/user');
 const Role = require('../model/role');
 const bcrypt = require('bcrypt');
+const sendEmail = require("../utils/sendEmail");
+
+// Password validation function: min 8 chars, uppercase, lowercase, digit, special char
+const validatePassword = (password) => {
+  const minLength = 8;
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasDigit = /\d/.test(password);
+  const hasSpecial = /[\W_]/.test(password);
+
+  return (
+    typeof password === 'string' &&
+    password.length >= minLength &&
+    hasUpper &&
+    hasLower &&
+    hasDigit &&
+    hasSpecial
+  );
+};
 
 // ✅ Create SubAdmin
 exports.createSubAdmin = async (req, res) => {
@@ -17,6 +36,13 @@ exports.createSubAdmin = async (req, res) => {
       return res.status(409).json({ message: "Email already exists." });
     }
 
+    if (!validatePassword(password)) {
+      return res.status(400).json({
+        error:
+          'Password must be at least 8 characters and include uppercase, lowercase, digit, and special character.', status: false
+      });
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newSubAdmin = new User({
@@ -30,6 +56,21 @@ exports.createSubAdmin = async (req, res) => {
     });
 
     await newSubAdmin.save();
+
+    // ✅ Send email if sub admin created
+      await sendEmail(
+        email,
+      "Welcome to Admin Panel",
+      `Hello ${name},
+
+Your Sub Admin account has been created successfully.
+
+Please login and change your password if needed.
+
+Best regards,
+Admin Team`
+    );
+    
 
     res.status(201).json({ message: "Sub Admin created successfully." });
   } catch (err) {
@@ -140,12 +181,46 @@ exports.updateSubAdmin = async (req, res) => {
       return res.status(404).json({ message: "Sub Admin not found." });
     }
 
-    await User.findByIdAndUpdate(id, {
+    const updateData = {
       name,
       email,
       role,
       is_active,
-    });
+    };
+
+    // let passwordChanged = false;
+
+    // if (!validatePassword(password)) {
+    //   return res.status(400).json({
+    //     error:
+    //       'Password must be at least 8 characters and include uppercase, lowercase, digit, and special character.', status: false
+    //   });
+    // }
+
+    // // Only hash and update password if provided
+    // if (password && password.trim() !== "") {
+    //   const salt = await bcrypt.genSalt(10);
+    //   updateData.password = await bcrypt.hash(password, salt);
+    //   passwordChanged = true;
+    // }
+
+    await User.findByIdAndUpdate(id, updateData);
+
+//     // ✅ Send email if password was updated
+//     if (passwordChanged) {
+//       await sendEmail(
+//         email,
+//         "Your password has been updated",
+//         `Hello ${name},
+
+// This is to inform you that your password has been successfully changed.
+
+// If you did not request this change, please contact the administrator immediately.
+
+// Best regards,
+// Admin Team`
+//       );
+//     }
 
     res.json({ message: "Sub Admin updated successfully." });
   } catch (err) {

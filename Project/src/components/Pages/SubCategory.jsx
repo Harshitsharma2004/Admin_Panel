@@ -437,7 +437,12 @@ const SubCategory = () => {
             </Select>
           </Form.Item>
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={newSubCategory.profile}
+            onChange={(file) =>
+              setNewSubCategory((prev) => ({ ...prev, profile: file }))
+            }
+          />
         </Form>
       </Modal>
 
@@ -491,7 +496,12 @@ const SubCategory = () => {
             </Select>
           </Form.Item>
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={newSubCategory.profile}
+            onChange={(file) =>
+              setNewSubCategory((prev) => ({ ...prev, profile: file }))
+            }
+          />
         </Form>
       </Modal>
 

@@ -141,6 +141,8 @@ exports.createSubCategory = async (req, res) => {
 // Update SubCategory
 exports.updateSubCategory = async (req, res) => {
 
+  console.log("Incoming File:", req.file);
+  console.log("Body:", req.body);
 
   try {
     const { id } = req.params;

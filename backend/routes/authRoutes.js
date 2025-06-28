@@ -20,7 +20,7 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 
 router.get('/user', requireAuth, authController.getUserData);
-router.put('/user/update', requireAuth, authController.updateUserProfile)
+router.put('/user/update', requireAuth,upload.single("profile"), authController.updateUserProfile)
 router.post('/user/update/verifyEmail', requireAuth, authController.verifyEmailChangeOtp)
 router.put('/user/change-password', requireAuth, authController.changePassword);
 
@@ -36,7 +36,7 @@ router.post('/upload', requireAuth, upload.single('file'), (req, res) => {
 router.post('/addUser', requireAuth, upload.single('profile'),authController.adminAddUser);
 
 
-router.put('/users/:id', requireAuth,upload.none(), authController.editUserByAdmin)
+router.put('/users/:id', requireAuth, upload.single('profile'), authController.editUserByAdmin)
 
 router.put('/users/:id/delete', requireAuth, authController.softDeleteUser);
 

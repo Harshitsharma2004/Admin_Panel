@@ -51,6 +51,8 @@ const RoleManagement = () => {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [selectedRoleId, setSelectedRoleId] = useState(null);
 
+  const [isEditing,setIsEditing]=useState(false);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -93,6 +95,7 @@ const RoleManagement = () => {
   };
 
   const handleUpdateRole = async (values) => {
+    setIsEditing(true);
     try {
       await axios.put(
         `http://localhost:5000/roles/update/${editingRoleId}`,
@@ -106,6 +109,8 @@ const RoleManagement = () => {
       fetchRoles();
     } catch (err) {
       toast.error(err.response?.data?.message || "Failed to update role.");
+    }finally{
+      setIsEditing(false)
     }
   };
 
@@ -319,7 +324,7 @@ const RoleManagement = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" block>
+            <Button type="primary" htmlType="submit" block loading={isEditing}>
               {isEditMode ? "Update Role" : "Save Role"}
             </Button>
           </Form.Item>

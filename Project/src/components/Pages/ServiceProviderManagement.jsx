@@ -7,8 +7,7 @@ import { FaToggleOn, FaToggleOff } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Modal } from "antd";
 
-import { EditOutlined, DeleteOutlined ,PlusOutlined} from "@ant-design/icons";
-
+import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 
 import { Input } from "antd";
 const { Search } = Input;
@@ -769,7 +768,12 @@ function ServiceProvider() {
             </>
           )}
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={newUser.profile}
+            onChange={(file) =>
+              setNewUser((prev) => ({ ...prev, profile: file }))
+            }
+          />
         </Form>
       </Modal>
     </div>

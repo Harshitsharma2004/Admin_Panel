@@ -25,7 +25,7 @@ const validatePassword = (password) => {
 // ✅ Create SubAdmin
 exports.createSubAdmin = async (req, res) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, modules } = req.body;
 
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "All fields are required." });
@@ -45,12 +45,16 @@ exports.createSubAdmin = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    const profilePath = req.file ? "/uploads/" + req.file.filename : "";
+
     const newSubAdmin = new User({
       name,
       email,
       password: hashedPassword,
       role,
+      modules,
       type: "SubAdmin",
+      profile: profilePath,
       is_active: true,
       is_deleted: false,
     });
@@ -58,8 +62,8 @@ exports.createSubAdmin = async (req, res) => {
     await newSubAdmin.save();
 
     // ✅ Send email if sub admin created
-      await sendEmail(
-        email,
+    await sendEmail(
+      email,
       "Welcome to Admin Panel",
       `Hello ${name},
 
@@ -70,7 +74,7 @@ Please login and change your password if needed.
 Best regards,
 Admin Team`
     );
-    
+
 
     res.status(201).json({ message: "Sub Admin created successfully." });
   } catch (err) {
@@ -135,8 +139,10 @@ exports.getAllSubAdmins = async (req, res) => {
         $project: {
           name: 1,
           email: 1,
+          profile:1,
           is_active: 1,
           createdAt: 1,
+          modules: 1,
           role: {
             _id: "$role._id",
             roleName: "$role.roleName",
@@ -174,7 +180,7 @@ exports.getAllSubAdmins = async (req, res) => {
 exports.updateSubAdmin = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, role, is_active } = req.body;
+    const { name, email, role, is_active, modules } = req.body;
 
     const existing = await User.findOne({ _id: id, type: "SubAdmin", is_deleted: false });
     if (!existing) {
@@ -186,7 +192,11 @@ exports.updateSubAdmin = async (req, res) => {
       email,
       role,
       is_active,
+      modules,
     };
+    if (req.file) {
+      updateData.profile = "/uploads/" + req.file.filename;
+    }
 
     // let passwordChanged = false;
 
@@ -203,24 +213,28 @@ exports.updateSubAdmin = async (req, res) => {
     //   updateData.password = await bcrypt.hash(password, salt);
     //   passwordChanged = true;
     // }
+    const existingEmail = await User.findOne({ email, _id: { $ne: id } });
+    if (existingEmail) {
+      return res.status(409).json({ message: "Email already exists." });
+    }
 
     await User.findByIdAndUpdate(id, updateData);
 
-//     // ✅ Send email if password was updated
-//     if (passwordChanged) {
-//       await sendEmail(
-//         email,
-//         "Your password has been updated",
-//         `Hello ${name},
+    //     // ✅ Send email if password was updated
+    //     if (passwordChanged) {
+    //       await sendEmail(
+    //         email,
+    //         "Your password has been updated",
+    //         `Hello ${name},
 
-// This is to inform you that your password has been successfully changed.
+    // This is to inform you that your password has been successfully changed.
 
-// If you did not request this change, please contact the administrator immediately.
+    // If you did not request this change, please contact the administrator immediately.
 
-// Best regards,
-// Admin Team`
-//       );
-//     }
+    // Best regards,
+    // Admin Team`
+    //       );
+    //     }
 
     res.json({ message: "Sub Admin updated successfully." });
   } catch (err) {

@@ -319,6 +319,7 @@ function User() {
           src={profile ? `http://localhost:5000/${profile}` : "/default.png"}
           alt="Profile"
           width="40"
+          style={{ borderRadius: "4px", objectFit: "cover" }}
         />
       ),
     },

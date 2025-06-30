@@ -68,23 +68,30 @@ exports.getAllSubCategories = async (req, res) => {
         },
       },
       {
-        $addFields: {
-          "category.name": "$category.name", // Ensure the dot path works
+        $sort: {
+          [sortKey]: sortOrder === "asc" ? 1 : -1,
         },
       },
       {
-        $sort: {
-          [sortKey]: sortOrder === "asc" ? 1 : -1,
+        $project: {
+          name: 1,
+          sort_order: 1,
+          createdAt: 1,
+          profile: 1,      // ✅ critical to display image
+          category: 1,
         },
       },
       { $skip: (parseInt(page) - 1) * parseInt(limit) },
       { $limit: parseInt(limit) },
     ];
+    
 
     const subcategories = await SubCategory.aggregate(pipeline).collation({
       locale: "en",
       strength: 2,
     });
+
+    // console.log("Returned Subcategories:", subcategories.map(s => s.profile));
 
 
     res.json({
@@ -103,14 +110,14 @@ exports.getAllSubCategories = async (req, res) => {
 
 // Create SubCategory
 exports.createSubCategory = async (req, res) => {
+// console.log("📦 Received file:", req.file);
 
 
   try {
 
-    console.log("Incoming body:", req.body);
-    console.log("Incoming file:", req.file);
     const { name, sort_order, category } = req.body;
-    const profile = req.file?.filename;
+    // const profile = req.file?.filename;
+    const profilePath = req.file ? `/${req.file.path.replace(/\\/g, "/")}` : "";
 
     // 🔒 Check for existing sort_order
     const existing = await SubCategory.findOne({ sort_order: parseInt(sort_order) });
@@ -124,12 +131,14 @@ exports.createSubCategory = async (req, res) => {
 
     const newSubCategory = new SubCategory({
       name,
-      sort_order,
+      sort_order: parseInt(sort_order),
       category,
-      profile,
+      profile: profilePath,
     });
 
     await newSubCategory.save();
+    // console.log("Uploaded File:", req.file); // must not be undefined
+    // console.log("Profile Path Saved:", profilePath);
 
     res.status(201).json({ message: "SubCategory created", subcategory: newSubCategory });
   } catch (err) {
@@ -140,16 +149,12 @@ exports.createSubCategory = async (req, res) => {
 
 // Update SubCategory
 exports.updateSubCategory = async (req, res) => {
-
-  console.log("Incoming File:", req.file);
-  console.log("Body:", req.body);
-
   try {
     const { id } = req.params;
     const { name, sort_order, category } = req.body;
-    const profile = req.file?.filename;
 
     const updatedFields = { name, sort_order, category };
+    const profilePath = req.file ? `/${req.file.path.replace(/\\/g, "/")}` : null;
 
     const existingSubCategory = await SubCategory.findById(id);
     if (!existingSubCategory) {
@@ -161,21 +166,23 @@ exports.updateSubCategory = async (req, res) => {
       sort_order &&
       parseInt(sort_order) !== existingSubCategory.sort_order
     ) {
-      const existingSort = await Service.findOne({ sort_order: parseInt(sort_order) });
+      const existingSort = await SubCategory.findOne({
+        sort_order: parseInt(sort_order),
+        _id: { $ne: id }
+      });
+
       if (existingSort) {
         return res.status(409).json({ message: "Sort order already exists" });
       }
     }
 
-    if (profile) updatedFields.profile = profile;
+    if (profilePath) updatedFields.profile = profilePath;
 
-    const updatedSubCategory = await SubCategory.findByIdAndUpdate(id, updatedFields, {
-      new: true,
-    });
-
-    if (!updatedSubCategory) {
-      return res.status(404).json({ message: "SubCategory not found" });
-    }
+    const updatedSubCategory = await SubCategory.findByIdAndUpdate(
+      id,
+      updatedFields,
+      { new: true }
+    );
 
     res.json({ message: "SubCategory updated", subcategory: updatedSubCategory });
   } catch (err) {
@@ -183,6 +190,7 @@ exports.updateSubCategory = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 // Delete SubCategory
 exports.deleteSubCategory = async (req, res) => {

@@ -3,8 +3,9 @@ const EventCategory = require('../model/category');
 // Create a new category
 exports.createCategory = async (req, res) => {
     try {
-        const { name, profile = "", sort_order } = req.body;
-        const profilePath = req.file ? req.file.path.replace(/\\/g, "/") : "";
+        const { name, sort_order } = req.body;
+        const profilePath = req.file ? `/${req.file.path.replace(/\\/g, "/")}` : "";
+
 
         // 🔒 Check for existing sort_order
         const existing = await EventCategory.findOne({ sort_order: parseInt(sort_order) });
@@ -19,6 +20,9 @@ exports.createCategory = async (req, res) => {
         });
 
         await category.save();
+        // console.log("Uploaded File:", req.file); // must not be undefined
+        // console.log("Profile Path Saved:", profilePath);
+
 
         res.status(201).json({ message: "Category created successfully", category });
     } catch (error) {
@@ -121,8 +125,8 @@ exports.updateCategory = async (req, res) => {
     const { id } = req.params;
     const { name, profile, sort_order } = req.body;
 
-//     console.log("Incoming File:", req.file);
-//   console.log("Body:", req.body);
+    //     console.log("Incoming File:", req.file);
+    //   console.log("Body:", req.body);
 
     try {
         // Check if the category exists
@@ -172,8 +176,12 @@ exports.updateCategory = async (req, res) => {
 
         // Update category fields
         category.name = name || category.name;
-        category.profile = profile || category.profile;
+        if (req.file) {
+            category.profile = `/uploads/${req.file.filename}`; // ✅ Save uploaded image path
+            // console.log("Saved image path:", category.profile);
+        }
         category.sort_order = newSortOrder || category.sort_order;
+
 
         await category.save();
         res.json({ message: "Category updated", category });

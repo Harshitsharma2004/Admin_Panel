@@ -60,6 +60,8 @@ const SubCategory = () => {
   const [sortField, setSortField] = useState("createdAt");
   const [sortOrder, setSortOrder] = useState("desc");
 
+  const [editProfileFile, setEditProfileFile] = useState(null);
+
   const fetchCategories = async () => {
     try {
       const res = await axios.get("http://localhost:5000/category");
@@ -133,12 +135,12 @@ const SubCategory = () => {
     sortOrder,
   ]);
 
-  const handleAddSubCategory = async () => {
+  const handleAddSubCategory = async (values) => {
     setAddLoading(true);
     const formData = new FormData();
-    formData.append("name", newSubCategory.name);
-    formData.append("sort_order", newSubCategory.sort_order);
-    formData.append("category", newSubCategory.categoryId);
+    formData.append("name", values.name);
+    formData.append("sort_order", values.sort_order);
+    formData.append("category", values.categoryId);
     if (newSubCategory.profile) {
       formData.append("profile", newSubCategory.profile);
     }
@@ -153,6 +155,8 @@ const SubCategory = () => {
         categoryId: null,
       });
       setIsAddModalVisible(false);
+      console.log("👉 File object sent:", newSubCategory.profile);
+
       toast.success("Subcategory created successfully", 4);
     } catch (error) {
       if (error.response?.status === 409) {
@@ -179,8 +183,8 @@ const SubCategory = () => {
     formData.append("name", values.name);
     formData.append("sort_order", values.sort_order);
     formData.append("category", values.categoryId);
-    if (values.profile) {
-      formData.append("profile", values.profile);
+    if (editProfileFile) {
+      formData.append("profile", editProfileFile);
     }
 
     try {
@@ -221,15 +225,17 @@ const SubCategory = () => {
     {
       title: "Image",
       dataIndex: "profile",
-      render: (img) => (
-        <img
-          src={img ? `http://localhost:5000/${img}` : "/default.png"}
-          width={50}
-          height={50}
-          style={{ objectFit: "cover", borderRadius: 4 }}
-          alt="img"
-        />
-      ),
+      render: (img) => {
+        return (
+          <img
+            src={img ? `http://localhost:5000${img}` : "/default.png"}
+            width={50}
+            height={50}
+            style={{ borderRadius: "4px", objectFit: "cover" }}
+            alt="img"
+          />
+        );
+      },
     },
     {
       title: "Name",
@@ -261,11 +267,22 @@ const SubCategory = () => {
             icon={<EditOutlined />}
             onClick={() => {
               setEditingSubCategory(record);
+
+              // ✅ Set form values for AntD Form
               editForm.setFieldsValue({
                 name: record.name,
                 sort_order: record.sort_order,
                 categoryId: record.category?._id || "",
               });
+
+              // ✅ Set existing image in newSubCategory.profile
+              setNewSubCategory({
+                name: record.name,
+                sort_order: record.sort_order,
+                profile: null,
+                categoryId: record.category?._id || "",
+              });
+
               setIsEditModalVisible(true);
             }}
           />
@@ -438,9 +455,9 @@ const SubCategory = () => {
           </Form.Item>
 
           <ProfileUploader
-            value={newSubCategory.profile}
+            value={editingSubCategory?.profile}
             onChange={(file) =>
-              setNewSubCategory((prev) => ({ ...prev, profile: file }))
+              setEditingSubCategory((prev) => ({ ...prev, profile: file }))
             }
           />
         </Form>
@@ -453,6 +470,7 @@ const SubCategory = () => {
         onOk={() => editForm.submit()}
         onCancel={() => {
           setIsEditModalVisible(false);
+          setEditProfileFile(null);
           navigate("/dashboard/sub_category");
         }}
         okButtonProps={{ loading: editLoading }}
@@ -497,10 +515,8 @@ const SubCategory = () => {
           </Form.Item>
 
           <ProfileUploader
-            value={newSubCategory.profile}
-            onChange={(file) =>
-              setNewSubCategory((prev) => ({ ...prev, profile: file }))
-            }
+            value={null}
+            onChange={(file) => setEditProfileFile(file)}
           />
         </Form>
       </Modal>

@@ -344,6 +344,7 @@ function ServiceProvider() {
         <img
           src={profile ? `http://localhost:5000/${profile}` : "/default.png"}
           alt="Profile"
+          style={{ borderRadius: "4px", objectFit: "cover" }}
           width="40"
         />
       ),

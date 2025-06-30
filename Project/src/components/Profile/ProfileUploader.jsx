@@ -1,6 +1,6 @@
 import { Upload, Button, Modal } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 
 const ProfileUploader = ({ value, onChange }) => {
@@ -22,8 +22,23 @@ const ProfileUploader = ({ value, onChange }) => {
 
   const handleChange = ({ fileList: newFileList }) => {
     setFileList(newFileList);
-    onChange(newFileList[0]?.originFileObj || null); // 🔁 Set the file outside
+
+    const fileObj = newFileList[0]?.originFileObj || null;
+    onChange(fileObj);
+
+    // if (fileObj) {
+    //   console.log("✅ Selected image name:", fileObj.name);
+    // } else {
+    //   console.log("❌ No file selected");
+    // }
   };
+
+  useEffect(() => {
+  if (!value) {
+    setFileList([]);
+  }
+}, [value]);
+
 
   const getBase64 = (file) =>
     new Promise((resolve, reject) => {

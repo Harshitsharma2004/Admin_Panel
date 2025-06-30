@@ -32,6 +32,7 @@ export const AuthProvider = ({ children }) => {
       if (res.ok) {
         const data = await res.json();
         setUser(data);
+    // console.log(JSON.stringify(data.permissions))
 
         if (data.role) setRole(data.role);
         if (Array.isArray(data.permissions)) setPermissions(data.permissions);

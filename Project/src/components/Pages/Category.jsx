@@ -46,7 +46,6 @@ const Category = () => {
     sort_order: "asc",
     profile: null,
   });
-  
 
   const [addLoading, setAddLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
@@ -128,13 +127,24 @@ const Category = () => {
     const formData = new FormData();
     formData.append("name", newCategory.name);
     formData.append("sort_order", newCategory.sort_order);
-    if (newCategory.profile) formData.append("profile", newCategory.profile);
+
+    if (newCategory.profile) {
+      console.log("Uploading file:", newCategory.profile.name);
+      formData.append("profile", newCategory.profile);
+    }
 
     try {
-      await axios.post("http://localhost:5000/category/create", formData);
-      fetchCategories();
+      const res = await axios.post(
+        "http://localhost:5000/category/create",
+        formData
+      );
+
+      // ✅ Update local table state immediately (assumes setCategories is defined)
+      setCategories((prev) => [...prev, res.data.category]);
+
       setIsAddModalVisible(false);
       setNewCategory({ name: "", sort_order: "asc", profile: null });
+
       toast.success("Category created successfully.");
     } catch (error) {
       if (error.response?.status === 409) {
@@ -155,12 +165,20 @@ const Category = () => {
     const formData = new FormData();
     formData.append("name", newCategory.name);
     formData.append("sort_order", newCategory.sort_order);
-    if (newCategory.profile) formData.append("profile", newCategory.profile);
+    if (newCategory.profile) {
+      // console.log("Uploading file:", newCategory.profile.name);
+      formData.append("profile", newCategory.profile);
+    }
 
     try {
       const res = await axios.put(
         `http://localhost:5000/category/update/${editingCategory._id}`,
-        formData
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
       setCategories((prev) =>
         prev.map((c) =>
@@ -170,6 +188,7 @@ const Category = () => {
       setIsEditModalVisible(false);
       setEditingCategory(null);
       setNewCategory({ name: "", sort_order: "asc", profile: null });
+      // console.log("Updated image path:", res.data);
       toast.success("Category updated successfully.");
     } catch (error) {
       if (error.response?.status === 409) {
@@ -191,13 +210,18 @@ const Category = () => {
       key: "profile",
       render: (img) => (
         <img
-          src={img ? `http://localhost:5000/uploads/${profile}` : "/default.png"}
+          src={img ? `http://localhost:5000${img}` : "/default.png"}
           alt="category"
           width={50}
           style={{ borderRadius: "4px", objectFit: "cover" }}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = "/default.png"; // fallback in case image is broken
+          }}
         />
       ),
     },
+
     {
       title: "Name",
       dataIndex: "name",

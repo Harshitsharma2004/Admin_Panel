@@ -31,6 +31,7 @@ const SubAdminManagement = () => {
     query: "",
     role: undefined,
     dateRange: null,
+    is_active: undefined,
   });
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -40,12 +41,13 @@ const SubAdminManagement = () => {
     pageSize: 5,
     total: 0,
   });
-
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [newStatusText, setNewStatusText] = useState("");
   const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modulePermissions, setModulePermissions] = useState([]);
 
-  const [isSubmitting,setIsSubmitting]=useState(false);
+  const [profileFile, setProfileFile] = useState(null);
 
   useEffect(() => {
     fetchRoles();
@@ -71,14 +73,16 @@ const SubAdminManagement = () => {
         page,
         limit: pageSize,
         query,
-        role, // <-- This ensures role is sent
+        role,
         is_active:
           typeof is_active === "boolean" ? is_active.toString() : undefined,
         dateFrom: dateRange?.[0]?.startOf("day").toISOString(),
-        dateTo: dateRange?.[1]?.endOf("day").toISOString(), // ensures full day is included
+        dateTo: dateRange?.[1]?.endOf("day").toISOString(),
       };
 
-      const res = await axios.get("http://localhost:5000/subadmin", { params });
+      const res = await axios.get("http://localhost:5000/subadmin", {
+        params,
+      });
       setSubAdmins(res.data.data);
       setPagination((prev) => ({
         ...prev,
@@ -94,23 +98,42 @@ const SubAdminManagement = () => {
   const handleFinish = async (values) => {
     setIsSubmitting(true);
     try {
+      const formData = new FormData();
+
+      formData.append("name", values.name);
+      formData.append("email", values.email);
+      if (!isEditMode) formData.append("password", values.password); // only for create
+      formData.append("role", values.role);
+      formData.append("modules", JSON.stringify(modulePermissions)); // stringify array
+
+      if (profileFile) {
+        formData.append("profile", profileFile); // selected image file
+      }
+
       if (isEditMode) {
         await axios.put(
           `http://localhost:5000/subadmin/update/${editingId}`,
-          values
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
         );
         toast.success("Sub Admin updated.");
       } else {
-        await axios.post("http://localhost:5000/subadmin/create", values);
+        await axios.post("http://localhost:5000/subadmin/create", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         toast.success("Sub Admin created.");
       }
+
       form.resetFields();
       setShowModal(false);
       setIsEditMode(false);
+      setProfileFile(null); // clear selected file
       fetchSubAdmins();
     } catch (err) {
       toast.error(err.response?.data?.message || "Operation failed.");
-    }finally{
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -123,6 +146,8 @@ const SubAdminManagement = () => {
       email: record.email,
       role: record.role._id,
     });
+    setModulePermissions(record.modules || []);
+    setProfileFile(null); // Clear any previously selected file
     setShowModal(true);
   };
 
@@ -154,7 +179,7 @@ const SubAdminManagement = () => {
     }
   };
 
-  const filteredData = subAdmins; // Backend handles filters
+  const filteredData = subAdmins;
 
   return (
     <div>
@@ -170,6 +195,7 @@ const SubAdminManagement = () => {
                 onClick={() => {
                   setShowModal(true);
                   setIsEditMode(false);
+                  setModulePermissions([]);
                   form.resetFields();
                 }}
               >
@@ -226,7 +252,6 @@ const SubAdminManagement = () => {
                   <Select.Option value="Active">Active</Select.Option>
                   <Select.Option value="Inactive">Inactive</Select.Option>
                 </Select>
-
                 <RangePicker
                   value={filters.dateRange}
                   onChange={(val) => setFilters({ ...filters, dateRange: val })}
@@ -269,17 +294,15 @@ const SubAdminManagement = () => {
             {
               title: "Image",
               dataIndex: "profile",
-              key: "profile",
               render: (img) => (
                 <img
-                  src={img ? `http://localhost:5000/${img}` : "/default.png"}
-                  alt="category"
+                  src={img ? `http://localhost:5000${img}` : "/default.png"}
+                  alt="profile"
                   width={50}
                   style={{ borderRadius: "4px", objectFit: "cover" }}
                 />
               ),
             },
-
             {
               title: "Name",
               dataIndex: "name",
@@ -300,27 +323,14 @@ const SubAdminManagement = () => {
             },
             {
               title: "Status",
-              key: "status",
               render: (_, record) => (
                 <Button
                   style={{ border: "none", background: "none" }}
                   icon={
                     record.is_active ? (
-                      <FaToggleOn
-                        style={{
-                          color: "green",
-                          fontSize: "20px",
-                          marginTop: "6px",
-                        }}
-                      />
+                      <FaToggleOn style={{ color: "green", fontSize: 20 }} />
                     ) : (
-                      <FaToggleOff
-                        style={{
-                          color: "red",
-                          fontSize: "20px",
-                          marginTop: "6px",
-                        }}
-                      />
+                      <FaToggleOff style={{ color: "red", fontSize: 20 }} />
                     )
                   }
                   onClick={() => {
@@ -333,7 +343,6 @@ const SubAdminManagement = () => {
                 </Button>
               ),
             },
-
             {
               title: "Actions",
               render: (_, record) => (
@@ -354,6 +363,7 @@ const SubAdminManagement = () => {
         />
       </Card>
 
+      {/* Modal for Create/Edit */}
       <Modal
         title={isEditMode ? "Edit Sub Admin" : "Add Sub Admin"}
         open={showModal}
@@ -386,7 +396,22 @@ const SubAdminManagement = () => {
             </Form.Item>
           )}
           <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-            <Select placeholder="Select Role">
+            <Select
+              placeholder="Select Role"
+              onChange={(value) => {
+                form.setFieldValue("role", value);
+                const selectedRole = roles.find((r) => r._id === value);
+                if (selectedRole?.modules) {
+                  const formatted = selectedRole.modules.map((mod) => ({
+                    name: mod.name,
+                    permissions: mod.permissions || [],
+                  }));
+                  setModulePermissions(formatted);
+                } else {
+                  setModulePermissions([]);
+                }
+              }}
+            >
               {roles.map((role) => (
                 <Select.Option key={role._id} value={role._id}>
                   {role.roleName}
@@ -394,14 +419,61 @@ const SubAdminManagement = () => {
               ))}
             </Select>
           </Form.Item>
-          <ProfileUploader/>
+
+          {/* Dynamic Permissions */}
+          {modulePermissions.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              <strong>Module Permissions</strong>
+              {modulePermissions.map((module, index) => (
+                <div key={module.name} style={{ marginTop: 10 }}>
+                  <div style={{ fontWeight: 500 }}>{module.name}</div>
+                  <div style={{ display: "flex", gap: "10px", marginTop: 5 }}>
+                    {["read", "write", "filter", "delete"].map((perm) => (
+                      <label key={perm}>
+                        <input
+                          type="checkbox"
+                          checked={module.permissions.includes(perm)}
+                          onChange={(e) => {
+                            const updatedModules = [...modulePermissions];
+                            const permList = updatedModules[index].permissions;
+                            if (e.target.checked) {
+                              if (!permList.includes(perm)) permList.push(perm);
+                            } else {
+                              updatedModules[index].permissions =
+                                permList.filter((p) => p !== perm);
+                            }
+                            setModulePermissions(updatedModules);
+                          }}
+                        />
+                        {perm.charAt(0).toUpperCase() + perm.slice(1)}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <ProfileUploader
+            value={profileFile}
+            onChange={(file) => setProfileFile(file)}
+          />
+
           <Form.Item>
-            <Button htmlType="submit" type="primary" block style={{marginTop:"10px"}} loading={isSubmitting}>
+            <Button
+              htmlType="submit"
+              type="primary"
+              block
+              loading={isSubmitting}
+              style={{ marginTop: "10px" }}
+            >
               {isEditMode ? "Update" : "Create"}
             </Button>
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Status Modal */}
       <Modal
         open={isStatusModalVisible}
         title="Change Status"

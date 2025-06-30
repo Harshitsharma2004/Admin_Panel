@@ -159,13 +159,16 @@ const ServiceManagement = () => {
     const payload = new FormData();
 
     const fullFormData = {
-      ...formData, // file/image etc.
-      ...values, // validated inputs from the form
+      ...values, // contains all validated form values
+      profile: formData.profile, // the uploaded image file from state
     };
 
+    // 🛠️ Append fields to FormData
     Object.entries(fullFormData).forEach(([key, value]) => {
       if (key === "subCategories" && Array.isArray(value)) {
         value.forEach((id) => payload.append("subCategories[]", id));
+      } else if (key === "profile" && value instanceof File) {
+        payload.append("profile", value); // 👈 this name MUST match multer.single("image")
       } else {
         payload.append(key, value);
       }
@@ -175,11 +178,20 @@ const ServiceManagement = () => {
       if (isEdit) {
         await axios.put(
           `http://localhost:5000/service/update/${currentService._id}`,
-          payload
+          payload,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
         );
         toast.success("Service updated successfully");
       } else {
-        await axios.post("http://localhost:5000/service/create", payload);
+        await axios.post("http://localhost:5000/service/create", payload, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
         toast.success("Service created successfully");
       }
 
@@ -188,12 +200,12 @@ const ServiceManagement = () => {
     } catch (error) {
       const errMsg =
         error.response?.data?.message || "Failed to add or update service";
-      setFormError(errMsg);
+
       if (error.response?.status === 409) {
         toast.error("Sort order already exists.");
       } else {
         toast.error(errMsg);
-        console.error(error);
+        console.error("Service error:", error);
       }
     } finally {
       setFormLoading(false);
@@ -221,11 +233,11 @@ const ServiceManagement = () => {
       dataIndex: "profile",
       render: (img) => (
         <img
-          src={img ? `http://localhost:5000/${img}` : "/default.png"}
+          src={img ? `http://localhost:5000${img}` : "/default.png"}
           alt="img"
           width={50}
           height={50}
-          style={{ borderRadius: "50%", objectFit: "cover" }}
+          style={{ borderRadius: "4px", objectFit: "cover" }}
         />
       ),
     },
@@ -263,9 +275,7 @@ const ServiceManagement = () => {
           <Button
             icon={<EditOutlined />}
             onClick={() => {
-              setIsEdit(true);
-              setCurrentService(record);
-              setFormData({
+              const updatedFormData = {
                 name: record.name,
                 category: record.category?._id,
                 subCategories: record.subCategories?.map((s) => s._id),
@@ -273,7 +283,12 @@ const ServiceManagement = () => {
                 min_price: record.min_price,
                 max_price: record.max_price,
                 profile: null,
-              });
+              };
+
+              setIsEdit(true);
+              setCurrentService(record);
+              setFormData(updatedFormData);
+              form.setFieldsValue(updatedFormData); // ✅ This forces update in form
               setSelected(record);
               setIsModalVisible(true);
               navigate(`/dashboard/services`);
@@ -384,7 +399,12 @@ const ServiceManagement = () => {
                   <Button
                     danger
                     onClick={() => {
-                      setFilters("");
+                      setFilters({
+                        query: "",
+                        selectedCategory: null,
+                        selectedSubCategory: null,
+                        dateRange: [],
+                      });
                     }}
                   >
                     Reset
@@ -430,6 +450,7 @@ const ServiceManagement = () => {
         open={isModalVisible}
         onCancel={() => {
           if (!formLoading) {
+            form.resetFields(); // ✅ Clear form on close
             setIsModalVisible(false);
             navigate("/dashboard/services");
           }
@@ -516,7 +537,13 @@ const ServiceManagement = () => {
             <Input type="number" min={0} />
           </Form.Item>
 
-          <ProfileUploader />
+          <ProfileUploader
+            value={formData.profile}
+            onChange={(file) =>
+              setFormData((prev) => ({ ...prev, profile: file }))
+            }
+            existingImage={isEdit ? currentService?.image : null}
+          />
         </Form>
       </Modal>
 

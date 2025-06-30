@@ -7,40 +7,43 @@ const mongoose = require("mongoose");
 exports.createService = async (req, res) => {
 
 
-    try {
-        const {
-            name,
-            category,
-            subCategories,
-            sort_order,
-            min_price,
-            max_price,
-        } = req.body;
+  try {
+    const {
+      name,
+      category,
+      subCategories,
+      sort_order,
+      min_price,
+      max_price,
+    } = req.body;
 
-        const newService = new Service({
-            name,
-            category,
-            subCategories: Array.isArray(subCategories)
-                ? subCategories
-                : [subCategories],
-            sort_order,
-            min_price,
-            max_price,
-            image: req.file?.path, // make sure field name is 'image' if that's what you're sending from frontend
-        });
-
-        // 🔒 Check for existing sort_order
-        const existing = await Service.findOne({ sort_order: parseInt(sort_order) });
-        if (existing) {
-            return res.status(409).json({ message: "Sort order already exists" });
-        }
-
-        await newService.save();
-        res.status(201).json({ message: "Service created successfully" });
-    } catch (err) {
-        console.error("Error creating service:", err);
-        res.status(500).json({ error: "Internal server error" });
+    // 🔒 Check for existing sort_order
+    const existing = await Service.findOne({ sort_order: parseInt(sort_order) });
+    if (existing) {
+      return res.status(409).json({ message: "Sort order already exists" });
     }
+
+    const newService = new Service({
+      name,
+      category,
+      subCategories: Array.isArray(subCategories)
+        ? subCategories
+        : [subCategories],
+      sort_order,
+      min_price,
+      max_price,
+      profile: req.file ? `/uploads/${req.file.filename}` : undefined,
+ // make sure field name is 'profile' if that's what you're sending from frontend
+    });
+
+
+
+    await newService.save();
+    res.status(201).json({ message: "Service created successfully" });
+  } catch (err) {
+    console.error("Error creating service:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 
@@ -76,14 +79,14 @@ exports.getAllServices = async (req, res) => {
       ];
     }
 
-  
+
 
     if (category) {
       match.category = new mongoose.Types.ObjectId(category);
     }
 
     if (subCategory) {
-      match.subCategories = new mongoose.Types.ObjectId(subCategory); ;
+      match.subCategories = new mongoose.Types.ObjectId(subCategory);;
     }
 
     if (minPrice || maxPrice) {
@@ -169,71 +172,72 @@ exports.getAllServices = async (req, res) => {
 
 // UPDATE SERVICE
 exports.updateService = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const {
-            name,
-            category,
-            subCategories,
-            sort_order,
-            min_price,
-            max_price,
-        } = req.body;
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      category,
+      subCategories,
+      sort_order,
+      min_price,
+      max_price,
+    } = req.body;
 
-        const existingService = await Service.findById(id);
-        if (!existingService) {
-            return res.status(404).json({ message: "Service not found" });
-        }
-
-        // If sort_order is being changed, check for duplicate
-        if (
-            sort_order &&
-            parseInt(sort_order) !== existingService.sort_order
-        ) {
-            const existingSort = await Service.findOne({ sort_order: parseInt(sort_order) });
-            if (existingSort) {
-                return res.status(409).json({ message: "Sort order already exists" });
-            }
-        }
-
-        // Update the service fields
-        existingService.name = name || existingService.name;
-        existingService.category = category || existingService.category;
-        existingService.subCategories = Array.isArray(subCategories)
-            ? subCategories
-            : subCategories
-                ? [subCategories]
-                : existingService.subCategories;
-        existingService.sort_order = sort_order || existingService.sort_order;
-        existingService.min_price = min_price || existingService.min_price;
-        existingService.max_price = max_price || existingService.max_price;
-
-        // If image is uploaded
-        if (req.file?.path) {
-            existingService.image = req.file.path;
-        }
-
-        await existingService.save();
-        res.status(200).json({ message: "Service updated successfully", service: existingService });
-    } catch (err) {
-        console.error("Error updating service:", err);
-        res.status(500).json({ error: "Internal server error" });
+    const existingService = await Service.findById(id);
+    if (!existingService) {
+      return res.status(404).json({ message: "Service not found" });
     }
+
+    // If sort_order is being changed, check for duplicate
+    if (
+      sort_order &&
+      parseInt(sort_order) !== existingService.sort_order
+    ) {
+      const existingSort = await Service.findOne({ sort_order: parseInt(sort_order) });
+      if (existingSort) {
+        return res.status(409).json({ message: "Sort order already exists" });
+      }
+    }
+
+    // Update the service fields
+    existingService.name = name || existingService.name;
+    existingService.category = category || existingService.category;
+    existingService.subCategories = Array.isArray(subCategories)
+      ? subCategories
+      : subCategories
+        ? [subCategories]
+        : existingService.subCategories;
+    existingService.sort_order = sort_order || existingService.sort_order;
+    existingService.min_price = min_price || existingService.min_price;
+    existingService.max_price = max_price || existingService.max_price;
+
+    // If profile is uploaded
+    if (req.file) {
+      existingService.profile = `/uploads/${req.file.filename}`;
+    }
+
+
+    await existingService.save();
+    res.status(200).json({ message: "Service updated successfully", service: existingService });
+  } catch (err) {
+    console.error("Error updating service:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };
 
 // DELETE SERVICE
 exports.deleteService = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        const deletedService = await Service.findByIdAndDelete(id);
-        if (!deletedService) {
-            return res.status(404).json({ message: "Service not found" });
-        }
-
-        res.status(200).json({ message: "Service deleted successfully" });
-    } catch (err) {
-        console.error("Error deleting service:", err);
-        res.status(500).json({ error: "Internal server error" });
+    const deletedService = await Service.findByIdAndDelete(id);
+    if (!deletedService) {
+      return res.status(404).json({ message: "Service not found" });
     }
+
+    res.status(200).json({ message: "Service deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting service:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 };

@@ -7,7 +7,10 @@ import { useAuth } from "../../../AuthContainer/AuthContainer";
 const SidebarItem = ({ to, iconPath, label, onClick }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isActive = location.pathname.startsWith(to);
+  const isActive =
+  location.pathname === to ||
+  (location.pathname.startsWith(to + "/") && to !== "/dashboard/home");
+
 
   const handleClick = () => {
     if (onClick) {
@@ -106,6 +109,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     setIsModalVisible(false);
+    navigate('/login')
     logout(); // uses context logout (which clears everything)
   };
 

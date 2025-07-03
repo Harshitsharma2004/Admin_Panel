@@ -22,8 +22,14 @@ export default function Login() {
 
     if (rememberedEmail && rememberedPassword) {
       // Decrypt the values before setting them
-      const decryptedEmail = CryptoJS.AES.decrypt(rememberedEmail, SECRET_KEY).toString(CryptoJS.enc.Utf8);
-      const decryptedPassword = CryptoJS.AES.decrypt(rememberedPassword, SECRET_KEY).toString(CryptoJS.enc.Utf8);
+      const decryptedEmail = CryptoJS.AES.decrypt(
+        rememberedEmail,
+        SECRET_KEY
+      ).toString(CryptoJS.enc.Utf8);
+      const decryptedPassword = CryptoJS.AES.decrypt(
+        rememberedPassword,
+        SECRET_KEY
+      ).toString(CryptoJS.enc.Utf8);
 
       if (decryptedEmail && decryptedPassword) {
         setEmail(decryptedEmail);
@@ -66,12 +72,19 @@ export default function Login() {
         toast.success(data.message || "Login successful!");
         const { token } = data;
         localStorage.setItem("authToken", token);
+        localStorage.setItem("justLoggedIn", "true"); // 👈 always set this on login
 
         // Handle "Remember Me" logic with encryption
         if (rememberMe) {
-          const encryptedEmail = CryptoJS.AES.encrypt(email.trim(), SECRET_KEY).toString();
-          const encryptedPassword = CryptoJS.AES.encrypt(password.trim(), SECRET_KEY).toString();
-          
+          const encryptedEmail = CryptoJS.AES.encrypt(
+            email.trim(),
+            SECRET_KEY
+          ).toString();
+          const encryptedPassword = CryptoJS.AES.encrypt(
+            password.trim(),
+            SECRET_KEY
+          ).toString();
+
           localStorage.setItem("rememberedEmail", encryptedEmail);
           localStorage.setItem("rememberedPassword", encryptedPassword);
         } else {
@@ -95,7 +108,7 @@ export default function Login() {
   return (
     <form className="auth-form" onSubmit={onSubmit} autoComplete="on">
       <img src={logo} alt="Logo" />
-      <h2 style={{margin:"10px",fontSize:"20px"}}>Admin Panel Login</h2>
+      <h2 style={{ margin: "10px", fontSize: "20px" }}>Admin Panel Login</h2>
 
       <label>Email</label>
       <input

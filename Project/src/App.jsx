@@ -26,6 +26,7 @@ import AttributeManagement from "./components/Pages/AttributeManagement";
 import ServiceProvider from "./components/Pages/ServiceProviderManagement";
 import RoleManagement from "./components/Pages/RoleManagement";
 import SubAdminManagement from "./components/Pages/SubAdminManagement";
+import WelcomePage from "./components/Pages/WelcomePage";
 
 import PermissionRoute from "./components/PermissionRoute";
 
@@ -75,7 +76,7 @@ function PublicRoute({ children }) {
     const isExpired = decoded.exp * 1000 < Date.now();
 
     if (!isExpired) {
-      return <Navigate to="/dashboard/home" replace />;
+      return <Navigate to="/dashboard" replace />;
     } else {
       localStorage.removeItem("authToken");
       return children;
@@ -131,7 +132,10 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="home" element={<UserInfo />} />{" "}
+            <Route index element={<Navigate to="welcome" replace />} />
+            <Route path="welcome" element={<WelcomePage />} />{" "}
+
+            <Route path="home" element={<UserInfo />} />
             {/* ✅ Add this line */}
             <Route path="edit_profile" element={<EditProfile />} />
             <Route path="change_password" element={<ChangePassword />} />

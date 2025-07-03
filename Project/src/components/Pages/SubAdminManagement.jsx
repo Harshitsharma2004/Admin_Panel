@@ -45,8 +45,8 @@ const SubAdminManagement = () => {
   const [newStatusText, setNewStatusText] = useState("");
   const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [modulePermissions, setModulePermissions] = useState([]);
 
+  const [permissions, setPermissions] = useState([]); // Static permissions
   const [profileFile, setProfileFile] = useState(null);
 
   useEffect(() => {
@@ -99,15 +99,14 @@ const SubAdminManagement = () => {
     setIsSubmitting(true);
     try {
       const formData = new FormData();
-
       formData.append("name", values.name);
       formData.append("email", values.email);
-      if (!isEditMode) formData.append("password", values.password); // only for create
+      if (!isEditMode) formData.append("password", values.password);
       formData.append("role", values.role);
-      formData.append("modules", JSON.stringify(modulePermissions)); // stringify array
+      formData.append("modules", JSON.stringify(permissions)); // flat array like ["read", "write"]
 
       if (profileFile) {
-        formData.append("profile", profileFile); // selected image file
+        formData.append("profile", profileFile);
       }
 
       if (isEditMode) {
@@ -129,7 +128,8 @@ const SubAdminManagement = () => {
       form.resetFields();
       setShowModal(false);
       setIsEditMode(false);
-      setProfileFile(null); // clear selected file
+      setPermissions([]);
+      setProfileFile(null);
       fetchSubAdmins();
     } catch (err) {
       toast.error(err.response?.data?.message || "Operation failed.");
@@ -146,8 +146,8 @@ const SubAdminManagement = () => {
       email: record.email,
       role: record.role._id,
     });
-    setModulePermissions(record.modules || []);
-    setProfileFile(null); // Clear any previously selected file
+    setPermissions(record.modules || []);
+    setProfileFile(null);
     setShowModal(true);
   };
 
@@ -179,8 +179,6 @@ const SubAdminManagement = () => {
     }
   };
 
-  const filteredData = subAdmins;
-
   return (
     <div>
       <Breadcrumb />
@@ -195,7 +193,7 @@ const SubAdminManagement = () => {
                 onClick={() => {
                   setShowModal(true);
                   setIsEditMode(false);
-                  setModulePermissions([]);
+                  setPermissions([]);
                   form.resetFields();
                 }}
               >
@@ -278,9 +276,10 @@ const SubAdminManagement = () => {
         }
       >
         <Table
-          dataSource={filteredData}
+          dataSource={subAdmins}
           rowKey="_id"
           loading={loading}
+          scroll={{ x: "max-content" }}
           pagination={{
             current: pagination.page,
             pageSize: pagination.pageSize,
@@ -371,6 +370,7 @@ const SubAdminManagement = () => {
           setShowModal(false);
           setIsEditMode(false);
           form.resetFields();
+          setPermissions([]);
         }}
         footer={null}
         destroyOnClose
@@ -390,28 +390,20 @@ const SubAdminManagement = () => {
             <Form.Item
               name="password"
               label="Password"
-              rules={[{ required: true, min: 6 }]}
+              rules={[
+                { required: true },
+                {
+                  pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/,
+                  message:
+                    "Password must be at least 8 characters and include uppercase, lowercase, digit, and special character.",
+                },
+              ]}
             >
               <Input.Password />
             </Form.Item>
           )}
           <Form.Item name="role" label="Role" rules={[{ required: true }]}>
-            <Select
-              placeholder="Select Role"
-              onChange={(value) => {
-                form.setFieldValue("role", value);
-                const selectedRole = roles.find((r) => r._id === value);
-                if (selectedRole?.modules) {
-                  const formatted = selectedRole.modules.map((mod) => ({
-                    name: mod.name,
-                    permissions: mod.permissions || [],
-                  }));
-                  setModulePermissions(formatted);
-                } else {
-                  setModulePermissions([]);
-                }
-              }}
-            >
+            <Select placeholder="Select Role">
               {roles.map((role) => (
                 <Select.Option key={role._id} value={role._id}>
                   {role.roleName}
@@ -420,39 +412,27 @@ const SubAdminManagement = () => {
             </Select>
           </Form.Item>
 
-          {/* Dynamic Permissions */}
-          {modulePermissions.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <strong>Module Permissions</strong>
-              {modulePermissions.map((module, index) => (
-                <div key={module.name} style={{ marginTop: 10 }}>
-                  <div style={{ fontWeight: 500 }}>{module.name}</div>
-                  <div style={{ display: "flex", gap: "10px", marginTop: 5 }}>
-                    {["read", "write", "filter", "delete"].map((perm) => (
-                      <label key={perm}>
-                        <input
-                          type="checkbox"
-                          checked={module.permissions.includes(perm)}
-                          onChange={(e) => {
-                            const updatedModules = [...modulePermissions];
-                            const permList = updatedModules[index].permissions;
-                            if (e.target.checked) {
-                              if (!permList.includes(perm)) permList.push(perm);
-                            } else {
-                              updatedModules[index].permissions =
-                                permList.filter((p) => p !== perm);
-                            }
-                            setModulePermissions(updatedModules);
-                          }}
-                        />
-                        {perm.charAt(0).toUpperCase() + perm.slice(1)}
-                      </label>
-                    ))}
-                  </div>
-                </div>
+          {/* Static Permissions */}
+          {/* <Form.Item label="Permissions">
+            <div style={{ display: "flex", gap: "15px" }}>
+              {["read", "write", "delete"].map((perm) => (
+                <label key={perm}>
+                  <input
+                    type="checkbox"
+                    checked={permissions.includes(perm)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setPermissions([...permissions, perm]);
+                      } else {
+                        setPermissions(permissions.filter((p) => p !== perm));
+                      }
+                    }}
+                  />
+                  {perm.charAt(0).toUpperCase() + perm.slice(1)}
+                </label>
               ))}
             </div>
-          )}
+          </Form.Item> */}
 
           <ProfileUploader
             value={profileFile}

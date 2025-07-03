@@ -201,7 +201,7 @@ const AttributeManagement = () => {
 
       // Ensure options is an empty array if type requires it but options is undefined
       if (
-        (values.type === "Radio" || values.type === "Checkbox") &&
+        (values.type === "radio" || values.type === "checkbox") &&
         (!Array.isArray(values.options) || values.options.length === 0)
       ) {
         toast.error("Please enter at least one option.");
@@ -216,13 +216,12 @@ const AttributeManagement = () => {
         sort_order: values.sort_order,
         type: values.type,
         options:
-          values.type === "Radio" || values.type === "Checkbox"
+          values.type === "radio" || values.type === "checkbox"
             ? values.options
             : undefined,
         is_active: values.is_active,
         is_required: values.is_required,
       };
-
 
       if (editingAttribute) {
         await axios.put(
@@ -323,7 +322,7 @@ const AttributeManagement = () => {
 
   const handleTypeChange = (value) => {
     console.log("value---", value);
-    if (value === "Radio" || value === "Checkbox") {
+    if (value === "radio" || value === "checkbox") {
       setShowType(true);
     } else {
       setShowType(false);
@@ -473,7 +472,18 @@ const AttributeManagement = () => {
           <Form.Item
             name="name"
             label="Attribute Name"
-            rules={[{ required: true, message: "Please enter attribute name" }]}
+            normalize={(value) => value?.trim()}
+            rules={[
+              { required: true, message: "Please enter attribute name" },
+              {
+                validator: (_, value) =>
+                  value && value.trim() !== ""
+                    ? Promise.resolve()
+                    : Promise.reject(
+                        "Attribute name cannot be empty or just spaces"
+                      ),
+              },
+            ]}
           >
             <Input placeholder="Enter Attribute Name" />
           </Form.Item>
@@ -499,20 +509,16 @@ const AttributeManagement = () => {
               placeholder="Select type"
               showSearch
               onChange={(val) =>
-                setShowType(val === "Radio" || val === "Checkbox")
+                setShowType(val === "radio" || val === "checkbox")
               }
             >
-              {[
-                "radio",
-                "button",
-                "checkbox",
-                "number",
-                "textbox",
-              ].map((type) => (
-                <Select.Option key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </Select.Option>
-              ))}
+              {["radio", "button", "checkbox", "number", "textbox"].map(
+                (type) => (
+                  <Select.Option key={type} value={type}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </Select.Option>
+                )
+              )}
             </Select>
           </Form.Item>
 
@@ -520,7 +526,20 @@ const AttributeManagement = () => {
             <Form.List
               name="options"
               rules={[
-                { required: true, message: "Please add at least one option." },
+                {
+                  validator: async (_, options) => {
+                    if (!options || options.length === 0) {
+                      return Promise.reject(
+                        new Error("Please add at least one option.")
+                      );
+                    }
+                    if (options.some((opt) => !opt || opt.trim() === "")) {
+                      return Promise.reject(
+                        new Error("Option names cannot be empty.")
+                      );
+                    }
+                  },
+                },
               ]}
             >
               {(fields, { add, remove }) => (
@@ -536,8 +555,17 @@ const AttributeManagement = () => {
                           {...restField}
                           name={name}
                           noStyle
+                          normalize={(value) => value.trim()}
                           rules={[
                             { required: true, message: "Enter option name" },
+                            {
+                              validator: (_, value) =>
+                                value && value.trim() !== ""
+                                  ? Promise.resolve()
+                                  : Promise.reject(
+                                      "Option cannot be empty or just spaces"
+                                    ),
+                            },
                           ]}
                         >
                           <Input
@@ -554,6 +582,7 @@ const AttributeManagement = () => {
                       </Input.Group>
                     </Form.Item>
                   ))}
+
                   <Form.Item>
                     <Button
                       type="dashed"

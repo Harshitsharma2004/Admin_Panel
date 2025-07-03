@@ -52,8 +52,13 @@ exports.createSubAdmin = async (req, res) => {
       email,
       password: hashedPassword,
       role,
-      modules,
       type: "SubAdmin",
+      modules: Array.isArray(modules)
+        ? modules
+        : typeof modules === "string"
+          ? JSON.parse(modules)
+          : [],
+
       profile: profilePath,
       is_active: true,
       is_deleted: false,
@@ -139,7 +144,7 @@ exports.getAllSubAdmins = async (req, res) => {
         $project: {
           name: 1,
           email: 1,
-          profile:1,
+          profile: 1,
           is_active: 1,
           createdAt: 1,
           modules: 1,
@@ -182,6 +187,9 @@ exports.updateSubAdmin = async (req, res) => {
     const { id } = req.params;
     const { name, email, role, is_active, modules } = req.body;
 
+    console.log("Modules from req.body:", req.body.modules);
+
+
     const existing = await User.findOne({ _id: id, type: "SubAdmin", is_deleted: false });
     if (!existing) {
       return res.status(404).json({ message: "Sub Admin not found." });
@@ -192,7 +200,12 @@ exports.updateSubAdmin = async (req, res) => {
       email,
       role,
       is_active,
-      modules,
+      modules: Array.isArray(modules)
+        ? modules
+        : typeof modules === "string"
+          ? JSON.parse(modules)
+          : [],
+
     };
     if (req.file) {
       updateData.profile = "/uploads/" + req.file.filename;
@@ -213,7 +226,7 @@ exports.updateSubAdmin = async (req, res) => {
     //   updateData.password = await bcrypt.hash(password, salt);
     //   passwordChanged = true;
     // }
-    const existingEmail = await User.findOne({ email, _id: { $ne: id } });
+    const existingEmail = await User.findOne({ email, _id: { $ne: id },is_deleted: false });
     if (existingEmail) {
       return res.status(409).json({ message: "Email already exists." });
     }
